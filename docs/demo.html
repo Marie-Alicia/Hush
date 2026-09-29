@@ -1,0 +1,2214 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Hush learns what your baby's cries tend to mean, from what actually settled them, and looks after you through the hardest nights. Try the interactive demo.">
+<meta property="og:title" content="Hush demo">
+<meta property="og:description" content="Hush learns what your baby's cries tend to mean, from what actually settled them, and looks after you through the hardest nights. Try the interactive demo.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0A0F1F">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>[hidden]{display:none!important} body{margin:0} img{max-width:100%}</style>
+<title>Hush Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: story rail + phone frame, like a night-light on a bedside table; the stream-test source sits in a wide code panel underneath. Dark-first, because it's used at 3am. */
+:root {
+  --bg: #0A0F1F;
+  --surface: #11172E;
+  --card: #192041;
+  --card-2: #20284D;
+  --ink: #EEF0FA;
+  --muted: #9AA2C6;
+  --line: #29315A;
+  --frame: #252D55;
+  --accent: #F4C27A;
+  --accent-ink: #1C1406;
+  --accent-soft: #3A3020;
+  --cry: #FF8FA3;
+  --cry-soft: #3D1F2E;
+  --calm: #8FD6B5;
+  --calm-soft: #16342A;
+  --warn: #FFB86B;
+  --warn-soft: #3E2A14;
+  --c-tired: #8FA8FF;
+  --c-hungry: #F4C27A;
+  --c-wind: #D7A1F0;
+  --c-nappy: #6FD0C0;
+  --c-other: #7D86AE;
+  --code-bg: #0D1226;
+  --shadow: 0 30px 70px -20px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.03);
+  --f-display: "Young Serif", "Iowan Old Style", Georgia, serif;
+  --f-body: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #ECEEF6; --surface: #FAFAFD; --card: #FFFFFF; --card-2: #F2F3FA; --ink: #151A33; --muted: #5C6385; --line: #E0E3EF; --frame: #151A33;
+    --accent: #A8690F; --accent-ink: #FFFFFF; --accent-soft: #FBEFD9; --cry: #C2334F; --cry-soft: #FCE5EB; --calm: #1C7A54; --calm-soft: #DDF3E9;
+    --warn: #A65A00; --warn-soft: #FDEBD3;
+    --c-tired: #4462D6; --c-hungry: #C98A1C; --c-wind: #9B4FC4; --c-nappy: #1B9483; --c-other: #8A90AC;
+    --code-bg: #F4F5FB; --shadow: 0 30px 60px -25px rgba(20,26,60,.35), 0 0 0 1px rgba(20,26,60,.04);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #ECEEF6; --surface: #FAFAFD; --card: #FFFFFF; --card-2: #F2F3FA; --ink: #151A33; --muted: #5C6385; --line: #E0E3EF; --frame: #151A33;
+  --accent: #A8690F; --accent-ink: #FFFFFF; --accent-soft: #FBEFD9; --cry: #C2334F; --cry-soft: #FCE5EB; --calm: #1C7A54; --calm-soft: #DDF3E9;
+  --warn: #A65A00; --warn-soft: #FDEBD3;
+  --c-tired: #4462D6; --c-hungry: #C98A1C; --c-wind: #9B4FC4; --c-nappy: #1B9483; --c-other: #8A90AC;
+  --code-bg: #F4F5FB; --shadow: 0 30px 60px -25px rgba(20,26,60,.35), 0 0 0 1px rgba(20,26,60,.04);
+  color-scheme: light;
+}
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; padding-inline: 16px; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, select:focus-visible, a:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; }
+p { margin: 0; }
+.serif { font-family: var(--f-display); }
+
+.app { min-height: 100%; display: grid; grid-template-columns: minmax(0, 360px) auto; gap: 64px; justify-content: center; align-items: center; padding-block: 32px; }
+.rail { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-size: 28px; }
+.moon { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); position: relative; overflow: hidden; flex-shrink: 0; }
+.moon::after { content: ""; position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--bg); left: 12px; top: -5px; }
+.rail-intro { color: var(--muted); max-width: 36ch; }
+.rail-intro strong { color: var(--ink); font-weight: 700; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.group-label { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 10px 4px; }
+.step { width: 100%; display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 10px; padding: 7px 10px; border: 0; background: transparent; border-radius: 12px; text-align: left; }
+.step:hover { background: var(--card); }
+.step .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.step.on { background: var(--card); }
+.step.on .n { background: var(--accent); color: var(--accent-ink); }
+.step.on .label { font-weight: 700; }
+.rail-note { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; max-width: 38ch; }
+.mobile-nav { display: none; }
+
+.phone { width: 390px; height: min(820px, calc(100dvh - 64px)); min-height: 560px; border-radius: 50px; border: 10px solid var(--frame); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.status { display: flex; justify-content: space-between; align-items: center; padding: 10px 26px 6px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.status .pill { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--card); color: var(--muted); }
+.status .pill.live { background: var(--calm-soft); color: var(--calm); }
+.status .pill.dev { background: var(--accent-soft); color: var(--accent); }
+.screen { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.screen.enter { animation: enter .3s ease-out; }
+@keyframes enter { from { opacity: .35; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .screen.enter, .pulse, .ring { animation: none !important; } }
+
+.bar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 8px 18px 10px; background: var(--surface); }
+.bar h2 { font-family: var(--f-display); font-size: 20px; flex: 1; min-width: 0; }
+.icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; flex-shrink: 0; }
+.content { padding: 4px 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+.cta { position: sticky; bottom: 0; margin-top: auto; padding: 12px 18px 18px; background: linear-gradient(to top, var(--surface) 72%, transparent); display: flex; flex-direction: column; gap: 8px; z-index: 3; }
+
+.btn { border: 0; border-radius: 16px; padding: 15px 18px; font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn.soft { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.btn.ghost { background: transparent; color: var(--muted); padding: 8px; font-size: 14px; font-weight: 700; }
+.btn.danger { background: var(--cry); color: var(--surface); }
+.btn.small { width: auto; padding: 9px 13px; font-size: 13px; border-radius: 12px; }
+
+.eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small-t { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+.section { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.grow { flex: 1; min-width: 0; }
+.center { text-align: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Pair */
+.pin-art { height: 170px; display: grid; place-items: center; position: relative; }
+.pin { width: 62px; height: 104px; border-radius: 31px; background: linear-gradient(160deg, var(--card-2), var(--card)); border: 1px solid var(--line); box-shadow: 0 10px 30px -10px rgba(0,0,0,.6); position: relative; z-index: 1; }
+.pin::after { content: ""; position: absolute; left: 50%; top: 18px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--calm); box-shadow: 0 0 12px var(--calm); }
+.ring { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: ring 2.2s ease-out infinite; }
+.ring.r2 { animation-delay: 1.1s; }
+@keyframes ring { 0% { transform: scale(.5); opacity: .7; } 100% { transform: scale(1.6); opacity: 0; } }
+.device { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.list { display: flex; flex-direction: column; }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.list-row:first-child { border-top: 0; padding-top: 0; }
+.list-row:last-child { padding-bottom: 0; }
+.dot-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--accent-soft); color: var(--accent); flex-shrink: 0; }
+
+/* Night */
+.night-hero { border-radius: 24px; padding: 22px 18px; background: radial-gradient(120% 90% at 80% 0%, var(--card-2), var(--card)); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden; }
+.night-hero .big-moon { position: absolute; right: -30px; top: -30px; width: 130px; height: 130px; border-radius: 50%; background: var(--accent); opacity: .9; }
+.night-hero .big-moon::after { content: ""; position: absolute; width: 110px; height: 110px; border-radius: 50%; background: var(--card-2); left: 38px; top: -14px; }
+.night-hero > *:not(.big-moon) { position: relative; z-index: 1; }
+.night-hero h1 { font-family: var(--f-display); font-size: 30px; line-height: 1.1; max-width: 70%; }
+.listening { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--calm); font-size: 14px; }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--calm); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--calm-soft); } 50% { box-shadow: 0 0 0 6px var(--calm-soft); } }
+.meter { display: flex; align-items: flex-end; gap: 3px; height: 36px; }
+.meter i { flex: 1; background: var(--muted); opacity: .45; border-radius: 3px 3px 0 0; min-height: 3px; transition: height .25s; }
+.ctx { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.ctx div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+.ctx b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.ctx span { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.quick button { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 6px; font-weight: 800; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.quick svg { width: 22px; height: 22px; color: var(--accent); }
+
+/* Cry */
+.cry-hero { border-radius: 24px; padding: 18px; background: var(--cry-soft); display: flex; flex-direction: column; gap: 6px; }
+.cry-hero .eyebrow { color: var(--cry); display: flex; align-items: center; gap: 8px; }
+.cry-hero .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cry); }
+.cry-hero h1 { font-family: var(--f-display); font-size: 28px; line-height: 1.15; }
+.guess { display: grid; grid-template-columns: 76px 1fr 44px; gap: 10px; align-items: center; font-weight: 700; }
+.guess .track { height: 12px; border-radius: 99px; background: var(--card-2); overflow: hidden; }
+.guess .track i { display: block; height: 100%; border-radius: 99px; transition: width .6s; }
+.guess .pct { text-align: right; font-variant-numeric: tabular-nums; }
+.guess.top { font-size: 17px; }
+.guess.top .track { height: 16px; }
+.why { display: flex; flex-direction: column; gap: 10px; }
+.why li { list-style: none; display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 14px; }
+.why ul { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.why .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+.ic.for { background: var(--calm-soft); color: var(--calm); }
+.ic.against { background: var(--card-2); color: var(--muted); }
+.try { background: var(--accent-soft); border-radius: 16px; padding: 14px; }
+.try b { color: var(--accent); }
+
+/* Label */
+.labels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lab { border: 1.5px solid var(--line); background: var(--card); border-radius: 16px; padding: 14px 12px; text-align: left; display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.lab .sw { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.lab[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.seg button { border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 4px; font-weight: 700; font-size: 13px; }
+.seg button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.big-tick { width: 76px; height: 76px; border-radius: 50%; background: var(--calm-soft); color: var(--calm); display: grid; place-items: center; margin: 10px auto 2px; }
+.progress { height: 10px; border-radius: 99px; background: var(--card-2); overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .8s; }
+
+/* Charts */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--muted); font-family: var(--f-body); font-size: 10.5px; font-weight: 700; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 700; padding: 6px 9px; border-radius: 9px; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .12s; z-index: 4; }
+.tip.show { opacity: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.day-list .list-row .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* Profile */
+.type { display: flex; flex-direction: column; gap: 8px; }
+.type-head { display: flex; align-items: center; gap: 10px; }
+.type-head .sw { width: 14px; height: 14px; border-radius: 4px; }
+.type-head b { font-size: 16px; flex: 1; }
+.acc { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.acc.good { background: var(--calm-soft); color: var(--calm); }
+.acc.learning { background: var(--warn-soft); color: var(--warn); }
+.spark { height: 26px; display: flex; align-items: center; gap: 2px; }
+.spark i { width: 3px; border-radius: 2px; }
+.gate { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gate div { border-radius: 14px; padding: 12px; background: var(--card-2); }
+.gate b { display: block; font-family: var(--f-display); font-size: 24px; font-weight: 400; font-variant-numeric: tabular-nums; }
+
+/* Insights */
+.insight { display: grid; grid-template-columns: 30px 1fr; gap: 12px; }
+.insight .n2 { width: 30px; height: 30px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.byline { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+/* Safety */
+.flag { border-radius: 24px; padding: 18px; background: var(--warn-soft); border: 1.5px solid var(--warn); display: flex; flex-direction: column; gap: 8px; }
+.flag h1 { font-family: var(--f-display); font-size: 26px; line-height: 1.15; }
+.flag .eyebrow { color: var(--warn); }
+.callbox { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.callbox .numtxt { font-family: var(--f-display); font-size: 28px; user-select: all; }
+
+/* Dev stream test (phone) */
+.dev-score { font-family: var(--f-mono); font-size: 54px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.dev-state { font-weight: 800; }
+.dev-graph { height: 110px; width: 100%; display: block; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+.stats { font-family: var(--f-mono); font-size: 12px; color: var(--muted); line-height: 1.6; white-space: pre-wrap; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.devlog { font-family: var(--f-mono); font-size: 11.5px; line-height: 1.6; background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 120px; max-height: 200px; overflow: auto; white-space: pre; }
+.devlog .c { color: var(--cry); } .devlog .g { color: var(--warn); } .devlog .m { color: var(--c-tired); } .devlog .s { color: var(--calm); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Code panel */
+.code-panel { max-width: 1100px; margin: 0 auto 48px; display: flex; flex-direction: column; gap: 14px; }
+.code-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.code-head h2 { font-family: var(--f-display); font-size: 28px; }
+.code-head p { color: var(--muted); max-width: 68ch; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; font-family: var(--f-mono); font-size: 12.5px; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.code-wrap { position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: 18px; min-width: 0; }
+.code-wrap pre { margin: 0; padding: 18px 20px; overflow: auto; max-height: 560px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; tab-size: 4; }
+.code-wrap .copy { position: absolute; top: 10px; right: 12px; }
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.flow div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; font-size: 13px; }
+.flow b { display: block; font-size: 14px; margin-bottom: 2px; }
+.flow code { font-family: var(--f-mono); font-size: 11.5px; color: var(--accent); overflow-wrap: anywhere; }
+.kw { color: var(--c-wind); } .str { color: var(--calm); } .com { color: var(--muted); font-style: italic; } .ty { color: var(--c-tired); } .nm { color: var(--accent); }
+
+.toast { position: absolute; left: 16px; right: 16px; bottom: 96px; z-index: 10; background: var(--ink); color: var(--surface); padding: 12px 14px; border-radius: 14px; font-size: 14px; font-weight: 600; transform: translateY(20px); opacity: 0; transition: all .25s; pointer-events: none; }
+.toast.show { transform: none; opacity: 1; }
+
+
+/* Looking after the parent */
+.you-hero { border-radius: 24px; padding: 18px; background: var(--calm-soft); display: flex; flex-direction: column; gap: 6px; }
+.you-hero .eyebrow { color: var(--calm); }
+.you-hero h1 { font-family: var(--f-display); font-size: 26px; line-height: 1.15; }
+.techs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tech { border: 1.5px solid var(--line); background: var(--card); border-radius: 14px; padding: 11px 12px; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.tech b { font-size: 14px; }
+.tech span { font-size: 12px; color: var(--muted); }
+.tech[aria-pressed="true"] { border-color: var(--calm); background: var(--calm-soft); }
+.tech .fav { font-size: 11px; font-weight: 800; color: var(--calm); }
+.orb-wrap { height: 230px; display: grid; place-items: center; position: relative; }
+.orb { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, var(--calm), var(--calm-soft)); opacity: .85; transform: scale(.75); transition-property: transform; transition-timing-function: ease-in-out; }
+.orb.big { transform: scale(1.45); }
+.orb-label { position: absolute; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.orb-label b { font-family: var(--f-display); font-size: 24px; font-weight: 400; }
+.orb-label span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.script-line { font-family: var(--f-display); font-size: 22px; line-height: 1.3; text-align: center; min-height: 120px; display: grid; place-items: center; padding: 0 8px; }
+.dots { display: flex; justify-content: center; gap: 6px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.dots i.on { background: var(--calm); }
+.feel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.feel button { border: 1.5px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 4px; font-weight: 800; }
+.feel button[aria-pressed="true"] { border-color: var(--calm); background: var(--calm-soft); }
+.checks { display: flex; flex-direction: column; }
+.checks button { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; text-align: left; border: 0; border-top: 1px solid var(--line); background: none; padding: 11px 0; }
+.checks button:first-child { border-top: 0; padding-top: 0; }
+.checks .box { width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: transparent; }
+.checks button[aria-pressed="true"] .box { background: var(--calm); border-color: var(--calm); color: var(--surface); }
+.checks button[aria-pressed="true"] .t { color: var(--muted); text-decoration: line-through; }
+.icon-card { border-radius: 18px; padding: 14px; background: var(--card-2); display: grid; grid-template-columns: 34px 1fr; gap: 10px 12px; align-items: start; }
+.icon-card .l { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-family: var(--f-display); font-size: 18px; }
+.away-timer { font-family: var(--f-display); font-size: 64px; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
+.away-ring { width: 210px; height: 210px; margin: 6px auto; display: block; }
+.moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.moods button { border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 2px; font-size: 12px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.moods button i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.moods button[aria-pressed="true"] { border-color: var(--ink); }
+.stepper { display: flex; align-items: center; gap: 12px; }
+.stepper button { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 20px; font-weight: 700; }
+.stepper b { font-size: 20px; font-variant-numeric: tabular-nums; min-width: 80px; text-align: center; }
+.text-in { width: 100%; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; padding: 11px 12px; font: inherit; color: var(--ink); resize: vertical; }
+.text-in:focus { outline: none; border-color: var(--calm); }
+.private { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.private::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--calm); flex-shrink: 0; }
+.people { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.person { border-radius: 16px; padding: 12px; background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.person b { font-family: var(--f-display); font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.person.tired { border-color: var(--warn); }
+.draft { font-size: 14.5px; line-height: 1.5; min-height: 96px; }
+.went-well li { list-style: none; display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 14px; }
+.went-well ul { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.went-well .ic { color: var(--calm); font-weight: 800; }
+.crisis-hero { border-radius: 24px; padding: 18px; background: var(--card-2); border: 1.5px solid var(--calm); display: flex; flex-direction: column; gap: 8px; }
+.crisis-hero h1 { font-family: var(--f-display); font-size: 26px; line-height: 1.15; }
+.safe-first { border-radius: 16px; padding: 14px; background: var(--accent-soft); font-size: 14px; }
+.safe-first b { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .orb { transition: none !important; } }
+
+/* Listening sources */
+.src { border: 1.5px solid var(--line); background: var(--card); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.src.on { border-color: var(--calm); }
+.src-head { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; }
+.src-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--card-2); display: grid; place-items: center; color: var(--accent); }
+.src-ic svg { width: 22px; height: 22px; }
+.src.on .src-ic { background: var(--calm-soft); color: var(--calm); }
+.src-state { font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 99px; background: var(--card-2); color: var(--muted); white-space: nowrap; }
+.src.on .src-state { background: var(--calm-soft); color: var(--calm); }
+.mon-opts { display: flex; flex-direction: column; gap: 6px; }
+.mon-opt { border: 1.5px solid var(--line); background: var(--card-2); border-radius: 12px; padding: 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.mon-opt[aria-pressed="true"] { border-color: var(--calm); }
+.mon-opt b { font-size: 13.5px; }
+.mon-opt span { font-size: 12px; color: var(--muted); }
+.mon-opt.soon { opacity: .7; }
+.bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.bars i { width: 3px; border-radius: 1px; background: var(--calm); }
+.bars i.off { background: var(--line); }
+.src-list .list-row { align-items: center; }
+
+
+/* Reports */
+.rtypes { display: flex; flex-direction: column; gap: 8px; }
+.rtype { border: 1.5px solid var(--line); background: var(--card); border-radius: 16px; padding: 12px 14px; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.rtype b { font-size: 14.5px; }
+.rtype span { font-size: 12.5px; color: var(--muted); grid-column: 1 / -1; }
+.rtype[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.rtype.urgent[aria-pressed="true"] { border-color: var(--cry); background: var(--cry-soft); }
+.rtype.mine[aria-pressed="true"] { border-color: var(--calm); background: var(--calm-soft); }
+.opt-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.opt-row:first-child { border-top: 0; padding-top: 0; }
+.sw-toggle { width: 46px; height: 28px; border-radius: 99px; border: 0; background: var(--line); position: relative; flex-shrink: 0; }
+.sw-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); transition: transform .2s; }
+.sw-toggle[aria-checked="true"] { background: var(--calm); }
+.sw-toggle[aria-checked="true"]::after { transform: translateX(18px); }
+.sw-toggle:disabled { opacity: .5; }
+.paper { background: #FFFFFF; color: #1B2033; border-radius: 6px; padding: 16px 16px 14px; box-shadow: 0 8px 24px -12px rgba(0,0,0,.45); font-size: 10.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 8px; aspect-ratio: 1 / 1.414; overflow: hidden; max-width: 100%; }
+.paper .ph { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1B2033; padding-bottom: 6px; }
+.paper .ph b { font-family: var(--f-display); font-size: 15px; font-weight: 400; }
+.paper .band { font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #5C6385; }
+.paper .kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.paper .kv div { background: #F2F3FA; border-radius: 4px; padding: 5px 6px; }
+.paper .kv b { display: block; font-size: 12px; font-variant-numeric: tabular-nums; }
+.paper .pbars { display: flex; align-items: flex-end; gap: 2px; height: 46px; border-bottom: 1px solid #C9CDE0; }
+.paper .pbars i { flex: 1; background: #4462D6; opacity: .75; border-radius: 1px 1px 0 0; }
+.paper .alert { background: #FCE5EB; border-left: 3px solid #C2334F; padding: 6px 8px; border-radius: 3px; }
+.paper .foot { margin-top: auto; font-size: 8.5px; color: #5C6385; border-top: 1px solid #E0E3EF; padding-top: 5px; }
+.send-sheet { border: 1.5px solid var(--accent); border-radius: 18px; padding: 14px; background: var(--card); display: flex; flex-direction: column; gap: 10px; }
+
+@media (max-width: 880px) {
+  .app { grid-template-columns: minmax(0, 1fr); gap: 10px; padding-block: 10px; align-items: start; justify-items: center; }
+  .rail { width: 100%; max-width: 480px; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .rail-intro, .steps, .rail-note { display: none; }
+  .brand { font-size: 22px; }
+  .moon { width: 28px; height: 28px; }
+  .moon::after { width: 22px; height: 22px; left: 10px; }
+  .mobile-nav { display: block; flex: 1; min-width: 0; max-width: 250px; }
+  .mobile-nav select { width: 100%; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .phone { width: 100%; max-width: 480px; height: calc(100dvh - 80px); min-height: 520px; border-width: 1px; border-color: var(--line); border-radius: 28px; }
+  .flow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .code-panel { margin-top: 24px; }
+}
+@media (max-width: 480px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit" title="Back to the Hush website"><span class="moon" aria-hidden="true"></span>Hush</a>
+    <p class="rail-intro">A clickable prototype. <strong>Sam</strong> is the parent of <strong>Isla</strong>, who is seven weeks old. Hush listens through a NotePin S, the iPhone or their baby monitor. It spots each cry, gives a guess based on Isla's own history, and learns from what actually settled her. It also looks after Sam: calming down at 3am, sharing nights with Jordan, and support when things get heavy.</p>
+    <ol class="steps" id="steps"></ol>
+    <p class="rail-note">Sample data. No audio is recorded or analysed here. Step 17 runs the stream-test logic on simulated audio; the real Swift code is below the phone.</p>
+    <label class="mobile-nav"><select id="step-select" aria-label="Jump to step"></select></label>
+  </aside>
+  <main class="phone" aria-label="Hush app prototype">
+    <div class="status"><span id="clock">02:14</span><span class="pill" id="role-pill"></span><span aria-hidden="true">●●● 5G</span></div>
+    <div class="screen" id="screen"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+</div>
+
+<section class="code-panel" id="code">
+  <div class="code-head">
+    <div>
+      <span class="eyebrow">Step 17 · the real code</span>
+      <h2>NotePin S → YAMNet stream test</h2>
+      <p>This code runs inside Plaud's iOS template app. Each audio chunk from the pin goes into a sliding YAMNet window, and cries become episodes with a saved WAV clip. Every frame is logged to a CSV so you can check it against what really happened that night.</p>
+    </div>
+  </div>
+  <div class="flow">
+    <div><b>1. NotePin S</b><code>blePcmData(sessionId:millsec:pcmData:isMusic:)</code><br><span class="muted">640 B · 16 kHz · mono · ~20 ms</span></div>
+    <div><b>2. HushAudioTap</b><code>ingest(sessionId:millsec:pcm:)</code><br><span class="muted">one line added to DeviceManager</span></div>
+    <div><b>3. CryDetector</b><code>15,600-sample window, hop 0.48 s</code><br><span class="muted">YAMNet · 3-frame smoothing · 0.35 / 0.20</span></div>
+    <div><b>4. Evidence</b><code>cries/*.wav · frames.csv</code><br><span class="muted">cry clips only; other audio isn't stored</span></div>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="code-wrap"><button class="btn soft small copy" id="copy-code">Copy</button><pre id="code-view" tabindex="0"></pre></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="text/plain" id="src-CryDetector.swift">
+import Foundation
+import TensorFlowLite
+
+/// Turns the NotePin S live PCM stream into YAMNet cry scores and cry episodes.
+///
+/// Input: the `blePcmData` chunks from PlaudDeviceAgent (640 bytes = 320 Int16 samples,
+/// 16 kHz mono, about 20 ms each). YAMNet needs 15,600 float samples (0.975 s) per
+/// inference, so chunks are collected into a sliding window and scored every 0.48 s.
+///
+/// Privacy: audio is only kept while an episode is open (plus the pre-roll).
+/// Everything else is overwritten in memory and never written to disk.
+final class CryDetector {
+
+    struct Config {
+        var sampleRate = 16_000
+        var windowSamples = 15_600          // YAMNet's fixed input length
+        var hopSamples = 7_680              // 0.48 s, YAMNet's native hop
+        var cryLabels = ["Baby cry, infant cry", "Crying, sobbing"]
+        var startThreshold: Float = 0.35    // smoothed score that opens an episode
+        var stopThreshold: Float = 0.20     // score that keeps an episode alive
+        var smoothingFrames = 3             // moving average over ~1.4 s
+        var endAfterSeconds: Double = 8     // quiet time before an episode closes
+        var preRollSeconds: Double = 10     // audio kept from before the cry started
+        var maxEpisodeSeconds: Double = 180 // long cries are split into several clips
+    }
+
+    struct Frame {
+        let streamSeconds: Double
+        let cryScore: Float
+        let smoothedScore: Float
+        let topLabel: String
+        let topScore: Float
+        let inferenceMs: Double
+        let inEpisode: Bool
+    }
+
+    struct Episode {
+        let id = UUID()
+        let startedAt: Date
+        let startStreamSeconds: Double
+        var endedAt: Date?
+        var peakScore: Float
+        var clipURL: URL?
+        var durationSeconds: Double { (endedAt ?? Date()).timeIntervalSince(startedAt) }
+    }
+
+    enum DetectorError: Error {
+        case cryLabelsNotFound
+        case unexpectedInputShape([Int])
+    }
+
+    // Callbacks are delivered on the main queue.
+    var onFrame: ((Frame) -> Void)?
+    var onEpisodeStart: ((Episode) -> Void)?
+    var onEpisodeEnd: ((Episode) -> Void)?
+    var onStreamGap: ((_ missingMs: Int) -> Void)?
+
+    let config: Config
+    let labels: [String]
+    private let cryIndices: [Int]
+    private let interpreter: Interpreter
+    private let queue = DispatchQueue(label: "hush.crydetector", qos: .userInitiated)
+    private let clipsDirectory: URL
+
+    private var window: [Float] = []
+    private var samplesSinceHop = 0
+    private var preRoll: RingBuffer
+    private var clip: [Int16] = []
+    private var recentScores: [Float] = []
+    private var episode: Episode?
+    private var lastLoudSeconds: Double = 0
+    private var streamSeconds: Double = 0
+    private var lastChunkMillsec: Int?
+    private var lastChunkMs = 20
+
+    init(modelURL: URL, classMapURL: URL, clipsDirectory: URL, config: Config = Config()) throws {
+        self.config = config
+        self.clipsDirectory = clipsDirectory
+        try FileManager.default.createDirectory(at: clipsDirectory, withIntermediateDirectories: true)
+
+        var options = Interpreter.Options()
+        options.threadCount = 2
+        interpreter = try Interpreter(modelPath: modelURL.path, options: options)
+        try interpreter.allocateTensors()
+        let shape = try interpreter.input(at: 0).shape.dimensions
+        guard shape.reduce(1, *) == config.windowSamples else { throw DetectorError.unexpectedInputShape(shape) }
+
+        let names = try Self.loadLabels(from: classMapURL)
+        let indices = config.cryLabels.compactMap { names.firstIndex(of: $0) }
+        guard !indices.isEmpty else { throw DetectorError.cryLabelsNotFound }
+        labels = names
+        cryIndices = indices
+
+        preRoll = RingBuffer(capacity: Int(config.preRollSeconds) * config.sampleRate)
+        window.reserveCapacity(config.windowSamples + 1_024)
+    }
+
+    /// Call from `blePcmData(sessionId:millsec:pcmData:isMusic:)`. Safe from any thread.
+    func ingest(pcm: Data, millsec: Int) {
+        queue.async { [weak self] in self?.process(pcm: pcm, millsec: millsec) }
+    }
+
+    /// Closes any open episode (for example when recording stops).
+    func flush() {
+        queue.async { [weak self] in self?.finishEpisode() }
+    }
+
+    // MARK: - Pipeline
+
+    private func process(pcm: Data, millsec: Int) {
+        let samples = Self.int16Samples(from: pcm)
+        guard !samples.isEmpty else { return }
+        let chunkMs = samples.count * 1_000 / config.sampleRate
+
+        // `millsec` is the device's position in the recording. A jump bigger than two
+        // chunks means BLE dropped audio. Worth measuring before trusting the detector.
+        if let last = lastChunkMillsec {
+            let missing = millsec - last - lastChunkMs
+            if missing > 2 * chunkMs { DispatchQueue.main.async { self.onStreamGap?(missing) } }
+        }
+        lastChunkMillsec = millsec
+        lastChunkMs = chunkMs
+
+        streamSeconds += Double(samples.count) / Double(config.sampleRate)
+        preRoll.append(samples)
+        if episode != nil { clip.append(contentsOf: samples) }
+
+        window.append(contentsOf: samples.map { Float($0) / 32_768 })
+        if window.count > config.windowSamples { window.removeFirst(window.count - config.windowSamples) }
+        samplesSinceHop += samples.count
+        guard window.count == config.windowSamples, samplesSinceHop >= config.hopSamples else { return }
+        samplesSinceHop = 0
+
+        do { try classifyWindow() } catch { print("[CryDetector] inference failed: \(error)") }
+    }
+
+    private func classifyWindow() throws {
+        let started = CFAbsoluteTimeGetCurrent()
+        let input = window.withUnsafeBufferPointer { Data(buffer: $0) }
+        try interpreter.copy(input, toInputAt: 0)
+        try interpreter.invoke()
+        let output = try interpreter.output(at: 0)
+        let scores: [Float] = output.data.withUnsafeBytes { Array($0.bindMemory(to: Float.self)) }
+        let inferenceMs = (CFAbsoluteTimeGetCurrent() - started) * 1_000
+
+        let cryScore = cryIndices.map { scores[$0] }.max() ?? 0
+        recentScores.append(cryScore)
+        if recentScores.count > config.smoothingFrames { recentScores.removeFirst() }
+        let smoothed = recentScores.reduce(0, +) / Float(recentScores.count)
+        let top = scores.indices.max { scores[$0] < scores[$1] } ?? 0
+
+        updateEpisode(smoothed: smoothed)
+
+        let frame = Frame(streamSeconds: streamSeconds, cryScore: cryScore, smoothedScore: smoothed,
+                          topLabel: labels[top], topScore: scores[top],
+                          inferenceMs: inferenceMs, inEpisode: episode != nil)
+        DispatchQueue.main.async { self.onFrame?(frame) }
+    }
+
+    private func updateEpisode(smoothed: Float) {
+        if var open = episode {
+            if smoothed >= config.stopThreshold {
+                lastLoudSeconds = streamSeconds
+                open.peakScore = max(open.peakScore, smoothed)
+                episode = open
+            }
+            let quietFor = streamSeconds - lastLoudSeconds
+            let runningFor = streamSeconds - open.startStreamSeconds
+            if quietFor >= config.endAfterSeconds || runningFor >= config.maxEpisodeSeconds {
+                finishEpisode()
+                // A cry that is still going after the split starts a fresh episode straight away.
+                if smoothed >= config.startThreshold { startEpisode(score: smoothed) }
+            }
+        } else if smoothed >= config.startThreshold {
+            startEpisode(score: smoothed)
+        }
+    }
+
+    private func startEpisode(score: Float) {
+        clip = preRoll.snapshot()
+        lastLoudSeconds = streamSeconds
+        let opened = Episode(startedAt: Date(), startStreamSeconds: streamSeconds, peakScore: score)
+        episode = opened
+        DispatchQueue.main.async { self.onEpisodeStart?(opened) }
+    }
+
+    private func finishEpisode() {
+        guard var closed = episode else { return }
+        closed.endedAt = Date()
+        let url = clipsDirectory.appendingPathComponent("cry-\(Self.fileStamp(closed.startedAt)).wav")
+        do {
+            try WavWriter.write(samples: clip, sampleRate: config.sampleRate, to: url)
+            closed.clipURL = url
+        } catch {
+            print("[CryDetector] could not save clip: \(error)")
+        }
+        episode = nil
+        clip = []
+        DispatchQueue.main.async { self.onEpisodeEnd?(closed) }
+    }
+
+    // MARK: - Helpers
+
+    static func int16Samples(from data: Data) -> [Int16] {
+        let count = data.count / 2
+        return data.withUnsafeBytes { raw in
+            (0..<count).map { Int16(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 2, as: Int16.self)) }
+        }
+    }
+
+    /// Parses yamnet_class_map.csv (index,mid,display_name; names with commas are quoted).
+    static func loadLabels(from url: URL) throws -> [String] {
+        let text = try String(contentsOf: url, encoding: .utf8)
+        return text.split(whereSeparator: \.isNewline).dropFirst().map { line in
+            let parts = line.split(separator: ",", maxSplits: 2, omittingEmptySubsequences: false)
+            guard parts.count == 3 else { return String(line) }
+            return parts[2].trimmingCharacters(in: CharacterSet(charactersIn: "\" "))
+        }
+    }
+
+    private static func fileStamp(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        return f.string(from: date)
+    }
+}
+
+/// Fixed-size buffer holding the last N samples, used for the pre-roll.
+struct RingBuffer {
+    private var storage: [Int16]
+    private var head = 0
+    private var filled = false
+
+    init(capacity: Int) { storage = Array(repeating: 0, count: max(capacity, 1)) }
+
+    mutating func append(_ samples: [Int16]) {
+        for s in samples {
+            storage[head] = s
+            head = (head + 1) % storage.count
+            if head == 0 { filled = true }
+        }
+    }
+
+    func snapshot() -> [Int16] {
+        filled ? Array(storage[head...] + storage[..<head]) : Array(storage[..<head])
+    }
+}
+
+enum WavWriter {
+    /// Writes 16-bit mono PCM with a standard 44-byte WAV header.
+    static func write(samples: [Int16], sampleRate: Int, to url: URL) throws {
+        let dataBytes = UInt32(samples.count * 2)
+        var d = Data()
+        func u32(_ v: UInt32) { withUnsafeBytes(of: v.littleEndian) { d.append(contentsOf: $0) } }
+        func u16(_ v: UInt16) { withUnsafeBytes(of: v.littleEndian) { d.append(contentsOf: $0) } }
+        d.append(contentsOf: Array("RIFF".utf8)); u32(36 + dataBytes)
+        d.append(contentsOf: Array("WAVE".utf8))
+        d.append(contentsOf: Array("fmt ".utf8)); u32(16); u16(1); u16(1)
+        u32(UInt32(sampleRate)); u32(UInt32(sampleRate * 2)); u16(2); u16(16)
+        d.append(contentsOf: Array("data".utf8)); u32(dataBytes)
+        samples.withUnsafeBufferPointer { buf in
+            buf.forEach { s in withUnsafeBytes(of: s.littleEndian) { d.append(contentsOf: $0) } }
+        }
+        try d.write(to: url, options: .atomic)
+    }
+}
+</script>
+<script type="text/plain" id="src-HushAudioTap.swift">
+import Foundation
+
+/// Single entry point for NotePin S PCM inside the Plaud template app.
+///
+/// DeviceManager.blePcmData forwards every chunk here (one line added by setup.sh).
+/// When a test session is running, chunks go to the CryDetector and every YAMNet frame
+/// is logged to a CSV you can export and compare against what really happened.
+final class HushAudioTap {
+
+    static let shared = HushAudioTap()
+
+    struct Stats {
+        var chunks = 0
+        var bytes = 0
+        var gaps = 0
+        var missingMs = 0
+        var frames = 0
+        var episodes = 0
+        var totalInferenceMs = 0.0
+        var avgInferenceMs: Double { frames == 0 ? 0 : totalInferenceMs / Double(frames) }
+    }
+
+    enum Marker: String {
+        case cryingNow = "parent_says_crying"
+        case falseAlarm = "parent_says_false_alarm"
+    }
+
+    private(set) var detector: CryDetector?
+    private(set) var stats = Stats()
+    private(set) var isRunning = false
+    private(set) var csvURL: URL?
+    private var csv: FileHandle?
+    private let lock = NSLock()
+    private var pendingMarker: Marker?
+
+    var onFrame: ((CryDetector.Frame) -> Void)?
+    var onEpisodeStart: ((CryDetector.Episode) -> Void)?
+    var onEpisodeEnd: ((CryDetector.Episode) -> Void)?
+    var onGap: ((Int) -> Void)?
+
+    static var baseDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Hush", isDirectory: true)
+    }
+
+    private init() {}
+
+    // MARK: - Session
+
+    func start(config: CryDetector.Config = CryDetector.Config()) throws {
+        guard !isRunning else { return }
+        guard let model = Bundle.main.url(forResource: "yamnet", withExtension: "tflite"),
+              let classMap = Bundle.main.url(forResource: "yamnet_class_map", withExtension: "csv") else {
+            throw NSError(domain: "Hush", code: 1, userInfo: [NSLocalizedDescriptionKey:
+                "yamnet.tflite or yamnet_class_map.csv is missing from the app bundle. Run setup.sh again."])
+        }
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let sessionDir = Self.baseDirectory.appendingPathComponent("sessions/\(stamp)", isDirectory: true)
+        let d = try CryDetector(modelURL: model, classMapURL: classMap,
+                                clipsDirectory: sessionDir.appendingPathComponent("cries"), config: config)
+
+        let url = sessionDir.appendingPathComponent("frames.csv")
+        FileManager.default.createFile(atPath: url.path, contents:
+            Data("wall_time,stream_s,cry_score,smoothed,top_label,top_score,inference_ms,in_episode,marker\n".utf8))
+        csv = try FileHandle(forWritingTo: url)
+        csv?.seekToEndOfFile()
+        csvURL = url
+
+        d.onFrame = { [weak self] f in self?.log(frame: f); self?.onFrame?(f) }
+        d.onEpisodeStart = { [weak self] e in self?.onEpisodeStart?(e) }
+        d.onEpisodeEnd = { [weak self] e in self?.stats.episodes += 1; self?.onEpisodeEnd?(e) }
+        d.onStreamGap = { [weak self] ms in
+            self?.stats.gaps += 1
+            self?.stats.missingMs += ms
+            self?.onGap?(ms)
+        }
+        lock.lock(); detector = d; stats = Stats(); isRunning = true; lock.unlock()
+    }
+
+    func stop() {
+        lock.lock(); let d = detector; detector = nil; isRunning = false; lock.unlock()
+        d?.flush()
+        // Give the detector queue a moment to write the last clip before closing the log.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.csv?.closeFile()
+            self?.csv = nil
+        }
+    }
+
+    /// Ground truth from the parent, written onto the next frame in the CSV.
+    func mark(_ marker: Marker) { pendingMarker = marker }
+
+    // MARK: - PCM in (called from DeviceManager.blePcmData, BLE thread)
+
+    func ingest(sessionId: Int, millsec: Int, pcm: Data) {
+        lock.lock(); let d = detector; lock.unlock()
+        guard let d else { return }
+        DispatchQueue.main.async { self.stats.chunks += 1; self.stats.bytes += pcm.count }
+        d.ingest(pcm: pcm, millsec: millsec)
+    }
+
+    // MARK: - CSV
+
+    private func log(frame f: CryDetector.Frame) {
+        stats.frames += 1
+        stats.totalInferenceMs += f.inferenceMs
+        let marker = pendingMarker?.rawValue ?? ""
+        pendingMarker = nil
+        let label = f.topLabel.replacingOccurrences(of: "\"", with: "'")
+        let line = String(format: "%@,%.2f,%.4f,%.4f,\"%@\",%.4f,%.1f,%d,%@\n",
+                          ISO8601DateFormatter().string(from: Date()), f.streamSeconds, f.cryScore,
+                          f.smoothedScore, label, f.topScore, f.inferenceMs, f.inEpisode ? 1 : 0, marker)
+        csv?.write(Data(line.utf8))
+    }
+}
+</script>
+<script type="text/plain" id="src-CryStreamTestViewController.swift">
+import UIKit
+
+/// Field-test screen: NotePin S live PCM → YAMNet, with live scores, stream health,
+/// ground-truth buttons and CSV export. Opened from the "Cry test" pill on the main screen.
+final class CryStreamTestViewController: UIViewController {
+
+    private let tap = HushAudioTap.shared
+    private let scoreLabel = UILabel()
+    private let stateLabel = UILabel()
+    private let statsLabel = UILabel()
+    private let graph = ScoreGraphView()
+    private let log = UITextView()
+    private let startButton = UIButton(type: .system)
+    private let cryingButton = UIButton(type: .system)
+    private let falseAlarmButton = UIButton(type: .system)
+    private let exportButton = UIButton(type: .system)
+    private var statsTimer: Timer?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Cry stream test"
+        view.backgroundColor = .systemBackground
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(close))
+
+        scoreLabel.font = .monospacedDigitSystemFont(ofSize: 56, weight: .bold)
+        scoreLabel.text = "0.00"
+        stateLabel.font = .preferredFont(forTextStyle: .headline)
+        stateLabel.text = "Not running"
+        statsLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        statsLabel.numberOfLines = 0
+        statsLabel.textColor = .secondaryLabel
+        log.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        log.isEditable = false
+        log.backgroundColor = .secondarySystemBackground
+        log.layer.cornerRadius = 10
+
+        style(startButton, "Start test", .systemIndigo, #selector(toggle))
+        style(cryingButton, "Baby is crying", .systemOrange, #selector(markCrying))
+        style(falseAlarmButton, "False alarm", .systemGray, #selector(markFalseAlarm))
+        style(exportButton, "Export CSV", .systemTeal, #selector(exportCSV))
+
+        let marks = UIStackView(arrangedSubviews: [cryingButton, falseAlarmButton])
+        marks.distribution = .fillEqually
+        marks.spacing = 8
+        let stack = UIStackView(arrangedSubviews: [stateLabel, scoreLabel, graph, statsLabel, startButton, marks, exportButton, log])
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            graph.heightAnchor.constraint(equalToConstant: 110),
+            log.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+        ])
+
+        tap.onFrame = { [weak self] f in self?.show(frame: f) }
+        tap.onEpisodeStart = { [weak self] e in self?.append("CRY START  \(Self.time(e.startedAt))  score \(String(format: "%.2f", e.peakScore))") }
+        tap.onEpisodeEnd = { [weak self] e in
+            self?.append("CRY END    \(Self.time(e.endedAt ?? Date()))  \(Int(e.durationSeconds))s  peak \(String(format: "%.2f", e.peakScore))  \(e.clipURL?.lastPathComponent ?? "no clip")")
+        }
+        tap.onGap = { [weak self] ms in self?.append("GAP        \(ms) ms of audio missing") }
+        updateButtons()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if !tap.isRunning { UIApplication.shared.isIdleTimerDisabled = false }
+    }
+
+    // MARK: - Actions
+
+    @objc private func toggle() {
+        if tap.isRunning {
+            tap.stop()
+            RecordingManager.shared.stopRecord()
+            statsTimer?.invalidate()
+            UIApplication.shared.isIdleTimerDisabled = false
+            stateLabel.text = "Stopped"
+            append("SESSION    stopped")
+        } else {
+            do {
+                try tap.start()
+                // bleRecordStart in DeviceManager calls syncFile(...), which turns on the PCM stream.
+                RecordingManager.shared.startRecord()
+                // Overnight tests: keep the phone on a charger with the screen awake so iOS doesn't suspend BLE.
+                UIApplication.shared.isIdleTimerDisabled = true
+                stateLabel.text = "Listening. Waiting for audio from the NotePin S…"
+                append("SESSION    started, log: \(tap.csvURL?.lastPathComponent ?? "-")")
+                statsTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.showStats() }
+            } catch {
+                stateLabel.text = error.localizedDescription
+            }
+        }
+        updateButtons()
+    }
+
+    @objc private func markCrying() { tap.mark(.cryingNow); append("MARK       parent: baby is crying") }
+    @objc private func markFalseAlarm() { tap.mark(.falseAlarm); append("MARK       parent: false alarm") }
+
+    @objc private func exportCSV() {
+        guard let url = tap.csvURL else { return }
+        let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = exportButton
+        present(sheet, animated: true)
+    }
+
+    @objc private func close() { dismiss(animated: true) }
+
+    // MARK: - Display
+
+    private func show(frame f: CryDetector.Frame) {
+        scoreLabel.text = String(format: "%.2f", f.smoothedScore)
+        scoreLabel.textColor = f.inEpisode ? .systemOrange : .label
+        stateLabel.text = f.inEpisode ? "Crying detected" : "Listening · top sound: \(f.topLabel)"
+        graph.push(f.smoothedScore, crying: f.inEpisode)
+    }
+
+    private func showStats() {
+        let s = tap.stats
+        let audioSeconds = Double(s.bytes) / 32_000  // 16 kHz × 2 bytes
+        statsLabel.text = """
+        chunks \(s.chunks)   audio \(String(format: "%.0f", audioSeconds)) s   frames \(s.frames)
+        gaps \(s.gaps) (\(s.missingMs) ms lost)   inference \(String(format: "%.1f", s.avgInferenceMs)) ms avg
+        episodes \(s.episodes)
+        """
+        if s.chunks == 0 { stateLabel.text = "No audio yet. Is the NotePin S connected and recording?" }
+    }
+
+    private func updateButtons() {
+        startButton.setTitle(tap.isRunning ? "Stop test" : "Start test", for: .normal)
+        [cryingButton, falseAlarmButton].forEach { $0.isEnabled = tap.isRunning }
+        exportButton.isEnabled = tap.csvURL != nil
+    }
+
+    private func append(_ line: String) {
+        log.text = line + "\n" + (log.text ?? "")
+    }
+
+    private func style(_ b: UIButton, _ title: String, _ color: UIColor, _ action: Selector) {
+        b.setTitle(title, for: .normal)
+        b.titleLabel?.font = .preferredFont(forTextStyle: .headline)
+        b.backgroundColor = color.withAlphaComponent(0.15)
+        b.tintColor = color
+        b.layer.cornerRadius = 12
+        b.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        b.addTarget(self, action: action, for: .touchUpInside)
+    }
+
+    private static func time(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f.string(from: d)
+    }
+}
+
+/// Rolling chart of smoothed cry scores with the start and stop thresholds drawn in.
+final class ScoreGraphView: UIView {
+    private var values: [(Float, Bool)] = []
+    private let capacity = 150  // ~72 s at one frame every 0.48 s
+    var startThreshold: Float = CryDetector.Config().startThreshold
+    var stopThreshold: Float = CryDetector.Config().stopThreshold
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .secondarySystemBackground
+        layer.cornerRadius = 10
+        clipsToBounds = true
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    func push(_ v: Float, crying: Bool) {
+        values.append((v, crying))
+        if values.count > capacity { values.removeFirst() }
+        setNeedsDisplay()
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        let w = rect.width / CGFloat(capacity)
+        for (i, (v, crying)) in values.enumerated() {
+            let h = rect.height * CGFloat(min(max(v, 0), 1))
+            (crying ? UIColor.systemOrange : UIColor.systemIndigo).setFill()
+            ctx.fill(CGRect(x: CGFloat(i) * w, y: rect.height - h, width: max(w - 1, 1), height: h))
+        }
+        for (t, color) in [(startThreshold, UIColor.systemOrange), (stopThreshold, UIColor.systemGray)] {
+            let y = rect.height * (1 - CGFloat(t))
+            color.setStroke()
+            let line = UIBezierPath()
+            line.move(to: CGPoint(x: 0, y: y))
+            line.addLine(to: CGPoint(x: rect.width, y: y))
+            line.setLineDash([4, 4], count: 2, phase: 0)
+            line.stroke()
+        }
+    }
+}
+
+/// Adds a small "Cry test" pill to the template app's main screen.
+enum CryStreamTestLauncher {
+    static func install(on host: UIViewController) {
+        let pill = UIButton(type: .system)
+        pill.setTitle("Cry test", for: .normal)
+        pill.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        pill.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.15)
+        pill.tintColor = .systemIndigo
+        pill.layer.cornerRadius = 16
+        pill.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        pill.addAction(UIAction { [weak host] _ in
+            let nav = UINavigationController(rootViewController: CryStreamTestViewController())
+            nav.modalPresentationStyle = .fullScreen
+            host?.present(nav, animated: true)
+        }, for: .touchUpInside)
+        host.view.addSubview(pill)
+        NSLayoutConstraint.activate([
+            pill.topAnchor.constraint(equalTo: host.view.safeAreaLayoutGuide.topAnchor, constant: 6),
+            pill.trailingAnchor.constraint(equalTo: host.view.trailingAnchor, constant: -16),
+        ])
+    }
+}
+</script>
+<script type="text/plain" id="src-setup.sh">
+#!/usr/bin/env bash
+# Builds the NotePin S → YAMNet stream test on top of Plaud's own iOS template app.
+# Usage: ./setup.sh [work-dir]      (default: ./build)
+# Needs: git, curl, xcodegen (brew install xcodegen), CocoaPods (brew install cocoapods)
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+WORK="${1:-$HERE/build}"
+REPO="$WORK/plaud-sdk-public"
+IOS="$REPO/ios"
+MODEL_URL="https://storage.googleapis.com/download.tensorflow.org/models/tflite/task_library/audio_classification/android/lite-model_yamnet_classification_tflite_1.tflite"
+MODEL_SHA="10c95ea3eb9a7bb4cb8bddf6feb023250381008177ac162ce169694d05c317de"
+CLASSMAP_URL="https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv"
+
+command -v xcodegen >/dev/null || { echo "xcodegen is missing. Install it with: brew install xcodegen"; exit 1; }
+command -v pod >/dev/null || { echo "CocoaPods is missing. Install it with: brew install cocoapods"; exit 1; }
+
+mkdir -p "$WORK"
+if [ ! -d "$REPO" ]; then
+  echo "→ Cloning Plaud SDK template app"
+  git clone --depth 1 https://github.com/Plaud-AI/plaud-sdk-public.git "$REPO"
+fi
+
+echo "→ Copying Hush stream test sources"
+mkdir -p "$IOS/PlaudTemplateApp/Hush" "$IOS/HushModel"
+cp "$HERE"/HushStreamTest/*.swift "$IOS/PlaudTemplateApp/Hush/"
+
+echo "→ Downloading YAMNet (TFLite, 4.1 MB) and its class map"
+curl -fsSL -o "$IOS/HushModel/yamnet.tflite" "$MODEL_URL"
+echo "$MODEL_SHA  $IOS/HushModel/yamnet.tflite" | shasum -a 256 -c - >/dev/null || { echo "yamnet.tflite checksum does not match"; exit 1; }
+curl -fsSL -o "$IOS/HushModel/yamnet_class_map.csv" "$CLASSMAP_URL"
+
+echo "→ Hooking blePcmData into HushAudioTap"
+DM="$IOS/PlaudTemplateApp/Managers/DeviceManager.swift"
+grep -q "HushAudioTap" "$DM" || perl -0pi -e 's|(\n(\s*)RecordingManager\.shared\.handlePcmData\(pcmData: pcmData\)[^\n]*)|$1\n$2HushAudioTap.shared.ingest(sessionId: sessionId, millsec: millsec, pcm: pcmData)|' "$DM"
+grep -q "HushAudioTap" "$DM" || { echo "Could not patch DeviceManager.blePcmData. Add the line by hand (see README)."; exit 1; }
+
+echo "→ Adding the Cry test button to the main screen"
+TB="$IOS/PlaudTemplateApp/UI/Main/MainTabBarController.swift"
+grep -q "CryStreamTestLauncher" "$TB" || perl -0pi -e 's|(\n(\s*)setupFloatingBar\(\)\n)|$1$2CryStreamTestLauncher.install(on: self)\n|' "$TB"
+grep -q "CryStreamTestLauncher" "$TB" || { echo "Could not patch MainTabBarController. Add the line by hand (see README)."; exit 1; }
+
+echo "→ Bundling the model"
+grep -q "HushModel" "$IOS/project.yml" || perl -0pi -e 's|(\n(\s*)- path: \.\./sdk/ios/PlaudDeviceBasicSDK\.bundle\n)|$1$2- path: HushModel\n|' "$IOS/project.yml"
+grep -q "HushModel" "$IOS/project.yml" || { echo "Could not add HushModel to project.yml resources."; exit 1; }
+
+echo "→ Adding TensorFlow Lite"
+cat > "$IOS/Podfile" <<'EOF'
+platform :ios, '14.0'
+
+target 'PlaudTemplateApp' do
+  use_frameworks!
+  pod 'TensorFlowLiteSwift', '~> 2.14'
+end
+EOF
+
+cd "$IOS"
+xcodegen generate
+pod install
+
+cat <<EOF
+
+Done. Next:
+  1. Put your Plaud User Access Token in $IOS/PartnerConfig.local.xcconfig
+  2. Set your own DEVELOPMENT_TEAM in $IOS/project.yml, then run: cd "$IOS" && xcodegen generate && pod install
+  3. open "$IOS/PlaudTemplateApp.xcworkspace" and run on a physical iPhone (the Plaud SDK has no simulator build)
+  4. Pair the NotePin S in the app, then tap "Cry test" at the top right.
+EOF
+</script>
+<script type="text/plain" id="src-offline_yamnet.py">
+"""Replays a NotePin S recording through the same YAMNet cry logic as the iPhone test.
+
+Use it to tune thresholds on a whole night at once: export the night's recording from the
+Plaud app as WAV (16 kHz mono), run this, and compare the episodes with what you noted.
+
+    pip install numpy ai-edge-litert
+    python offline_yamnet.py night.wav --model yamnet.tflite --classes yamnet_class_map.csv
+    python offline_yamnet.py night.wav --start 0.30 --stop 0.15 --csv frames.csv
+"""
+import argparse
+import csv
+import wave
+
+import numpy as np
+
+try:
+    from ai_edge_litert.interpreter import Interpreter
+except ImportError:  # older installs
+    from tflite_runtime.interpreter import Interpreter
+
+SR, WINDOW, HOP = 16_000, 15_600, 7_680
+
+
+def load_wav(path):
+    with wave.open(path, "rb") as w:
+        if w.getframerate() != SR or w.getsampwidth() != 2:
+            raise SystemExit(f"{path}: needs 16 kHz 16-bit WAV (got {w.getframerate()} Hz, {8 * w.getsampwidth()}-bit)")
+        pcm = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2")
+        if w.getnchannels() > 1:
+            pcm = pcm.reshape(-1, w.getnchannels()).mean(axis=1)
+    return pcm.astype(np.float32) / 32768.0
+
+
+def load_labels(path):
+    with open(path, newline="") as f:
+        return [row["display_name"] for row in csv.DictReader(f)]
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("wav")
+    p.add_argument("--model", default="yamnet.tflite")
+    p.add_argument("--classes", default="yamnet_class_map.csv")
+    p.add_argument("--start", type=float, default=0.35, help="smoothed score that opens an episode")
+    p.add_argument("--stop", type=float, default=0.20, help="score that keeps an episode alive")
+    p.add_argument("--smooth", type=int, default=3)
+    p.add_argument("--end-after", type=float, default=8.0)
+    p.add_argument("--csv", help="write every frame here")
+    a = p.parse_args()
+
+    audio = load_wav(a.wav)
+    labels = load_labels(a.classes)
+    cry_idx = [labels.index(n) for n in ("Baby cry, infant cry", "Crying, sobbing")]
+
+    interp = Interpreter(model_path=a.model)
+    interp.allocate_tensors()
+    inp, out = interp.get_input_details()[0], interp.get_output_details()[0]
+
+    recent, episodes, frames = [], [], []
+    open_at = last_loud = None
+    peak = 0.0
+    for start in range(0, len(audio) - WINDOW + 1, HOP):
+        interp.set_tensor(inp["index"], audio[start:start + WINDOW].reshape(inp["shape"]))
+        interp.invoke()
+        scores = interp.get_tensor(out["index"]).reshape(-1)
+        t = (start + WINDOW) / SR
+        cry = float(max(scores[i] for i in cry_idx))
+        recent = (recent + [cry])[-a.smooth:]
+        smoothed = sum(recent) / len(recent)
+
+        if open_at is not None:
+            if smoothed >= a.stop:
+                last_loud, peak = t, max(peak, smoothed)
+            if t - last_loud >= a.end_after:
+                episodes.append((open_at, last_loud, peak))
+                open_at = None
+        elif smoothed >= a.start:
+            open_at, last_loud, peak = t, t, smoothed
+
+        top = int(scores.argmax())
+        frames.append((round(t, 2), round(cry, 4), round(smoothed, 4), labels[top], round(float(scores[top]), 4), int(open_at is not None)))
+
+    if open_at is not None:
+        episodes.append((open_at, last_loud, peak))
+
+    hms = lambda s: f"{int(s // 3600):02d}:{int(s % 3600 // 60):02d}:{int(s % 60):02d}"
+    print(f"{len(audio) / SR / 60:.1f} min of audio · {len(frames)} frames · {len(episodes)} cry episodes")
+    for s, e, pk in episodes:
+        print(f"  {hms(s)} → {hms(e)}  ({e - s:4.0f} s)  peak {pk:.2f}")
+
+    if a.csv:
+        with open(a.csv, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["stream_s", "cry_score", "smoothed", "top_label", "top_score", "in_episode"])
+            w.writerows(frames)
+        print(f"frames written to {a.csv}")
+
+
+if __name__ == "__main__":
+    main()
+</script>
+
+<script>
+const IC = {
+  back: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  tick: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  bottle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M10.5 2v3M13.5 2v3"/><path d="M8 8a2 2 0 0 1 2-3h4a2 2 0 0 1 2 3v11a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3z"/><path d="M8 12h8"/></svg>',
+  sleep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+  nappy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7h18v3a9 9 0 0 1-18 0z"/><path d="M8 7v2M16 7v2"/></svg>'
+};
+
+const CAUSE = {
+  tired: { label: 'Tired', color: 'var(--c-tired)' },
+  hungry: { label: 'Hungry', color: 'var(--c-hungry)' },
+  wind: { label: 'Wind', color: 'var(--c-wind)' },
+  nappy: { label: 'Nappy', color: 'var(--c-nappy)' },
+  other: { label: 'Other', color: 'var(--c-other)' }
+};
+
+const STEPS = [
+  ['pair', 'Choose how Hush listens', 'Parent'],
+  ['night', 'Night mode', 'Parent'],
+  ['cry', 'A cry, and a guess', 'Parent'],
+  ['label', 'What settled her?', 'Parent'],
+  ['timeline', 'Yesterday at a glance', 'Parent'],
+  ['profile', "Isla's cry profile", 'Parent'],
+  ['insights', 'Weekly insights', 'Parent'],
+  ['reports', 'Reports for her health team', 'Parent'],
+  ['safety', 'Red-flag cry', 'Parent'],
+  ['learned', 'Learning progress', 'Parent'],
+  ['calm', 'Calm Coach', 'You'],
+  ['settle', 'Settle Guide and a safe break', 'You'],
+  ['checkin', 'Daily check-in', 'You'],
+  ['tagteam', 'Tag-team the night', 'You'],
+  ['morning', 'Morning reflection', 'You'],
+  ['crisis', 'Crisis support', 'You'],
+  ['devtest', 'Stream test (developer)', 'Developer']
+];
+
+function fresh() {
+  return { screen: 'pair', paired: false, scanning: false, label: null, took: null, cries: 38, devRunning: false,
+    src: { pin: 'off', phone: 'off', monitor: 'off' }, monType: null, monUrl: 'rtsp://192.168.1.40:554/audio',
+    tech: 'breath', calm: { running: false, t: 0, done: false }, feel: null, calmUses: 0,
+    settleTicks: new Set([0, 1]), away: null,
+    rep: { type: 'hv', days: 14, back: 'insights', sending: false, to: 'Isla\u2019s health visitor team', email: '',
+      inc: { causes: true, redflags: true, wellbeing: false, feeds: true, tried: true, sleep: true, calm: true, notes: false },
+      q: { hv: 'Is her evening crying normal for her age? Should we worry about wind after short feeds?',
+           urgent: 'Her cry sounded different and weaker than usual. Should she be seen today?',
+           parent: 'The nights are really hard and I\u2019d like to talk about how I\u2019m feeling.' } },
+    mood: null, sleepH: 4, win: '', note: '', checked: false,
+    tagMsg: "Hey, I've been up 5 times and I'm running on empty. Could you do the 03:30 feed? There's expressed milk in the fridge. I'll take over at 06:30. Thank you \u2764\ufe0f" };
+}
+let S = fresh();
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- Sample data (Isla, 7 weeks) ---------- */
+const GUESSES = [['tired', 62], ['hungry', 24], ['wind', 9], ['other', 5]];
+const YESTERDAY = {
+  sleep: [[0, 1.6], [2.1, 4.8], [5.4, 7.2], [9.0, 10.3], [12.1, 13.9], [15.3, 16.2], [19.4, 21.8], [22.3, 24]],
+  feeds: [1.8, 5.0, 8.1, 11.2, 14.3, 17.4, 20.9],
+  cries: [
+    [1.75, 'hungry', 4], [4.9, 'hungry', 3], [7.4, 'tired', 6], [8.8, 'tired', 9], [11.0, 'hungry', 5], [11.9, 'wind', 7],
+    [15.1, 'tired', 11], [17.2, 'hungry', 6], [17.9, 'other', 14], [18.6, 'tired', 18], [19.2, 'wind', 8], [22.1, 'nappy', 3]
+  ]
+};
+const WEEK = [['Tue', 16], ['Wed', 14], ['Thu', 15], ['Fri', 12], ['Sat', 13], ['Sun', 11], ['Mon', 12]];
+const PROFILE = [
+  { k: 'tired', n: 14, acc: 81, desc: 'Starts as grizzles, builds over about 30 s into a steady rhythm. Worst in the evening.' },
+  { k: 'hungry', n: 12, acc: 74, desc: 'Short, low bursts with pauses. Often comes with rooting or lip-smacking sounds.' },
+  { k: 'wind', n: 7, acc: 58, desc: 'Sudden, high-pitched start and uneven breathing. Usually 10–40 minutes after a feed.' },
+  { k: 'nappy', n: 3, acc: null, desc: 'Not enough examples yet. Hush needs about 8 before it can tell this cry apart.' }
+];
+
+/* ---------- Screens ---------- */
+const V = {};
+
+V.pair = () => S.paired ? `
+  <div class="bar"><h2>You're connected</h2></div>
+  <div class="content">
+    <div class="big-tick">${IC.tick}</div>
+    <div class="center section"><h1 class="serif" style="font-size:26px">NotePin S is ready</h1><p class="muted">Battery 86% · about 17 hours of listening left</p></div>
+    <div class="card section">
+      <span class="eyebrow">Where to put it</span>
+      <div class="list">
+        <div class="list-row"><span class="dot-n">1</span><span>Clip it about 1 metre from the cot, not inside it.</span></div>
+        <div class="list-row"><span class="dot-n">2</span><span>Keep your phone on charge overnight, within about 10 metres.</span></div>
+        <div class="list-row"><span class="dot-n">3</span><span>Only cries are kept. Everything else the pin hears is deleted on your phone right away.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="cta"><button class="btn primary" data-go="night">Start night mode</button></div>` : `
+  <div class="bar"><h2>Pair your NotePin S</h2></div>
+  <div class="content">
+    <div class="pin-art">${S.scanning ? '<span class="ring"></span><span class="ring r2"></span>' : ''}<span class="pin"></span></div>
+    <p class="center muted">Press and hold the pin's button for 3 seconds until the light flashes.</p>
+    ${S.scanning ? `<div class="card device"><div><b>NotePin S · 4F2A</b><div class="small-t muted">Signal strong · battery 86%</div></div><button class="btn small primary" data-action="connect">Connect</button></div>` : ''}
+    <p class="small-t muted center">Only the NotePin S works with Hush. The original NotePin isn't supported.</p>
+  </div>
+  <div class="cta">${S.scanning ? '<button class="btn soft" data-action="connect">Connect to NotePin S · 4F2A</button>' : '<button class="btn primary" data-action="scan">Look for my NotePin S</button>'}</div>`;
+
+V.night = () => `
+  <div class="bar"><h2>Tonight</h2><span class="chip">Tue 29 Sep</span></div>
+  <div class="content">
+    <div class="night-hero">
+      <span class="big-moon" aria-hidden="true"></span>
+      <span class="listening"><span class="pulse"></span>Listening</span>
+      <h1>Isla is quiet</h1>
+      <div class="meter" id="meter" aria-label="Sound level by the cot">${'<i></i>'.repeat(28)}</div>
+      <p class="small-t muted">${srcNames().join(' + ')} · no cries since 01:32</p>
+    </div>
+    <div class="ctx">
+      <div><span>Last feed</span><b>01:10</b><span>64 min ago</span></div>
+      <div><span>Asleep</span><b>01:40</b><span>34 min</span></div>
+      <div><span>Nappy</span><b>01:15</b><span>wet</span></div>
+    </div>
+    <div class="two">
+      <button class="card" style="text-align:left" data-go="checkin"><span class="eyebrow">For you</span><br><b>How are you, Sam?</b></button>
+      <button class="card" style="text-align:left" data-go="tagteam"><span class="eyebrow">Tonight</span><br><b>Tag-team with Jordan</b></button>
+    </div>
+    <div class="section">
+      <span class="eyebrow">Log something</span>
+      <div class="quick">
+        <button data-toast="Feed logged at 02:14. Tip: say “fed 120 ml” to the pin and Plaud writes it down for you.">${IC.bottle}Feed</button>
+        <button data-toast="Sleep logged at 02:14.">${IC.sleep}Sleep</button>
+        <button data-toast="Nappy logged at 02:14.">${IC.nappy}Nappy</button>
+      </div>
+    </div>
+  </div>
+  <div class="cta"><button class="btn danger" data-action="simcry">Demo: Isla starts crying</button></div>`;
+
+V.cry = () => `
+  <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>Crying</h2><span class="chip num" id="cry-timer">0:12</span></div>
+  <div class="content">
+    <div class="cry-hero">
+      <span class="eyebrow">Started 02:14 · building</span>
+      <h1>Probably tired</h1>
+      <p class="small-t muted">Based on 38 of Isla's past cries and her routine tonight · heard by ${srcNames().join(' and ')}</p>
+    </div>
+    <div class="card section">
+      ${GUESSES.map(([k, p], i) => `<div class="guess ${i === 0 ? 'top' : ''}"><span>${CAUSE[k].label}</span><span class="track"><i style="width:${p}%;background:${CAUSE[k].color}"></i></span><span class="pct">${p}%</span></div>`).join('')}
+    </div>
+    <div class="card why">
+      <span class="eyebrow">Why Hush thinks so</span>
+      <ul>
+        <li><span class="ic for">+</span><span>She fell asleep 34 minutes ago. At night she usually sleeps for around 2 hours.</span></li>
+        <li><span class="ic for">+</span><span>The cry is building slowly with a steady rhythm, like 11 of her 14 tired cries.</span></li>
+        <li><span class="ic against">−</span><span>Hungry is less likely: she fed 64 minutes ago, and at night she usually goes about 2 h 40 m between feeds.</span></li>
+      </ul>
+    </div>
+    <div class="try"><b>Try first:</b> keep the lights low, pat and shush for 2–3 minutes before picking her up.</div>
+    <div class="two"><button class="btn soft small" style="width:100%;border-color:var(--calm)" data-go="calm">I need a moment</button><button class="btn soft small" style="width:100%" data-go="settle">Help me settle her</button></div>
+  </div>
+  <div class="cta">
+    <button class="btn primary" data-go="label">She's settled</button>
+    <button class="btn ghost" data-go="safety">Demo: a cry that sounds different</button>
+  </div>`;
+
+V.label = () => {
+  if (S.label && S.took) {
+    return `
+    <div class="bar"><h2>Saved</h2></div>
+    <div class="content">
+      <div class="big-tick">${IC.tick}</div>
+      <div class="center section"><h1 class="serif" style="font-size:26px">Thanks, Sam</h1><p class="muted">${S.label === 'tired' ? 'Hush guessed tired, and it was. ' : `Hush guessed tired, but it was ${CAUSE[S.label].label.toLowerCase()}. `}Hush has now learned from ${S.cries} of Isla's cries.</p></div>
+      <div class="card section">
+        <div class="row" style="justify-content:space-between"><b>Learning Isla's cries</b><span class="num muted small-t">${S.cries} / 50</span></div>
+        <div class="progress"><i style="width:${Math.min(100, S.cries / 50 * 100)}%"></i></div>
+        <p class="small-t muted">At 50 labelled cries, guesses usually become reliable. Until then, Hush shows its reasons so you can judge for yourself.</p>
+      </div>
+    </div>
+    <div class="cta"><button class="btn primary" data-go="timeline">See yesterday</button><button class="btn ghost" data-go="night">Back to night mode</button></div>`;
+  }
+  const opts = [['hungry', 'Fed'], ['tired', 'Rocked to sleep'], ['wind', 'Burped'], ['nappy', 'Nappy change'], ['other', 'Cuddle'], ['other2', 'Too hot or cold']];
+  return `
+  <div class="bar"><button class="icon-btn" data-go="cry" aria-label="Back">${IC.back}</button><h2>What settled her?</h2></div>
+  <div class="content">
+    <p class="muted">One tap teaches Hush what this cry meant. Your best guess is fine.</p>
+    <div class="labels">${opts.map(([k, t]) => { const c = CAUSE[k] || CAUSE.other; return `<button class="lab" data-lab="${k}" aria-pressed="${S.label === k}"><span class="sw" style="background:${c.color}"></span>${t}</button>`; }).join('')}</div>
+    <button class="btn ghost" data-lab="unsure">Not sure. Skip this one.</button>
+    <div class="section">
+      <span class="eyebrow">How long did it take?</span>
+      <div class="seg">${['< 2 min', '2–10 min', '10–30', '30+'].map((t) => `<button data-took="${t}" aria-pressed="${S.took === t}">${t}</button>`).join('')}</div>
+    </div>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="savelabel" ${S.label && S.took ? '' : 'disabled'}>${S.label ? (S.took ? 'Save' : 'Pick how long it took') : 'Pick what settled her'}</button></div>`;
+};
+
+V.timeline = () => `
+  <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>Yesterday</h2><span class="chip">Mon 28 Sep</span></div>
+  <div class="content">
+    <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip num">12 cries · 1 h 34 m</span><span class="chip num">7 feeds</span><span class="chip num">14 h 50 m asleep</span></div>
+    <div class="card section">
+      <span class="eyebrow">Monday, midnight to midnight</span>
+      <div class="chart" id="day-chart"></div>
+      <div class="legend">${['tired', 'hungry', 'wind', 'nappy', 'other'].map((k) => `<span><i style="background:${CAUSE[k].color}"></i>${CAUSE[k].label}</span>`).join('')}<span><i style="background:var(--card-2);border:1px solid var(--line)"></i>Asleep</span></div>
+    </div>
+    <div class="card list day-list">
+      ${YESTERDAY.cries.slice().reverse().slice(0, 6).map(([h, k, m]) => `<div class="list-row"><span class="sw" style="background:${CAUSE[k].color}"></span><span class="grow"><b>${CAUSE[k].label}</b> <span class="muted small-t">· ${m} min</span></span><span class="num muted small-t">${hhmm(h)}</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="cta"><button class="btn primary" data-go="profile">Isla's cry profile</button></div>`;
+
+V.profile = () => `
+  <div class="bar"><button class="icon-btn" data-go="timeline" aria-label="Back">${IC.back}</button><h2>Isla's cries</h2></div>
+  <div class="content">
+    <div class="card section">
+      <span class="eyebrow">Does the sound help?</span>
+      <div class="gate">
+        <div><span class="small-t muted">Routine only</span><b>58%</b><span class="small-t muted">right first time</span></div>
+        <div style="background:var(--calm-soft)"><span class="small-t muted">Routine + her cry</span><b style="color:var(--calm)">72%</b><span class="small-t muted">right first time</span></div>
+      </div>
+      <p class="small-t muted">Tested on her last 10 labelled cries. Hush only shows a guess when adding the sound beats guessing from her routine alone.</p>
+    </div>
+    ${PROFILE.map((p) => `<div class="card type">
+      <div class="type-head"><span class="sw" style="background:${CAUSE[p.k].color}"></span><b>${CAUSE[p.k].label}</b>${p.acc ? `<span class="acc ${p.acc >= 70 ? 'good' : 'learning'}">${p.acc}% right</span>` : '<span class="acc learning">learning</span>'}</div>
+      <p class="small-t">${p.desc}</p>
+      <div class="row" style="justify-content:space-between"><div class="spark" aria-hidden="true">${sparkBars(p.k)}</div><span class="small-t muted num">${p.n} examples</span></div>
+    </div>`).join('')}
+  </div>
+  <div class="cta"><button class="btn primary" data-go="insights">This week's insights</button></div>`;
+
+V.insights = () => `
+  <div class="bar"><button class="icon-btn" data-go="profile" aria-label="Back">${IC.back}</button><h2>Your week with Isla</h2></div>
+  <div class="content">
+    <div class="card section">
+      <div class="row" style="justify-content:space-between;align-items:baseline"><span class="eyebrow">Cries per day</span><span class="small-t muted num">16 → 12</span></div>
+      <div class="chart" id="week-chart"></div>
+    </div>
+    <div class="section">
+      <div class="insight"><span class="n2">1</span><div><b>Evenings are the hardest part.</b><p class="small-t muted">41% of this week's crying was between 17:00 and 20:00, and most of it was labelled tired. An earlier, dimmer bedtime routine starting around 18:15 might help.</p></div></div>
+      <div class="insight"><span class="n2">2</span><div><b>Night feeds are stretching.</b><p class="small-t muted">The gap between night feeds grew from about 2 h 10 m to 2 h 40 m. That's why Hush now says "hungry" less often before 03:00.</p></div></div>
+      <div class="insight"><span class="n2">3</span><div><b>Wind cries cluster after quick feeds.</b><p class="small-t muted">5 of 7 wind cries came after feeds shorter than 12 minutes. Try burping halfway through.</p></div></div>
+    </div>
+    <p class="small-t muted">Many babies cry most around 6 to 8 weeks, and it usually eases after that. If you're worried about how much Isla is crying, talk to your health visitor.</p>
+    <span class="byline">Written from your logs by Claude Sonnet 5.5 · only numbers are sent, never audio</span>
+  </div>
+  <div class="cta"><button class="btn soft" data-action="openreport" data-rt="hv">Make a report for her health visitor</button></div>`;
+
+V.safety = () => `
+  <div class="bar"><button class="icon-btn" data-go="cry" aria-label="Back">${IC.back}</button><h2>Check on Isla</h2></div>
+  <div class="content">
+    <div class="flag">
+      <span class="eyebrow">This cry sounds different</span>
+      <h1>Higher and weaker than Isla's usual cries</h1>
+      <p class="small-t">Her pitch has been well above her normal range for 4 minutes. Hush can't tell you why, and it isn't a medical check.</p>
+    </div>
+    <div class="card section">
+      <b>Trust your instincts. Get advice if Isla:</b>
+      <ul class="small-t" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+        <li>has a high-pitched, weak or unusual cry</li><li>feels hot, or is floppy or hard to wake</li><li>isn't feeding, or has fewer wet nappies</li><li>has been crying for more than 3 hours</li>
+      </ul>
+    </div>
+    <div class="card callbox"><div><span class="small-t muted">NHS urgent advice</span><div class="numtxt">111</div></div><button class="btn small soft" data-copy="111">Copy</button></div>
+    <div class="card callbox" style="border-color:var(--cry)"><div><span class="small-t muted">Struggling to breathe, or turning blue</span><div class="numtxt" style="color:var(--cry)">999</div></div><button class="btn small soft" data-copy="999">Copy</button></div>
+  </div>
+  <div class="cta"><button class="btn soft" data-action="openreport" data-rt="urgent" style="border-color:var(--warn)">Make an urgent summary for the doctor</button><button class="btn primary" data-go="night">She's OK now</button></div>`;
+
+V.learned = () => `
+  <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>How Hush learns</h2></div>
+  <div class="content">
+    <div class="card section">
+      <div class="row" style="justify-content:space-between"><b>Isla's cries so far</b><span class="num muted small-t">${S.cries} labelled</span></div>
+      <div class="progress"><i style="width:${Math.min(100, S.cries / 50 * 100)}%"></i></div>
+      <div class="legend">${['tired', 'hungry', 'wind', 'nappy'].map((k) => `<span><i style="background:${CAUSE[k].color}"></i>${CAUSE[k].label} ${PROFILE.find((p) => p.k === k).n}</span>`).join('')}</div>
+    </div>
+    <div class="card list">
+      <div class="list-row"><span class="dot-n">1</span><span class="grow"><b>Weeks 1–2: getting to know Isla</b><br><span class="small-t muted">Hush spots cries and records your routine. It doesn't guess yet.</span></span></div>
+      <div class="list-row"><span class="dot-n">2</span><span class="grow"><b>From 25 labels: guesses with reasons</b><br><span class="small-t muted">Only shown when the sound makes guesses better than routine alone.</span></span></div>
+      <div class="list-row"><span class="dot-n">3</span><span class="grow"><b>From 50 labels: a confident profile</b><br><span class="small-t muted">Each cry type has its own description and example clips.</span></span></div>
+    </div>
+    <div class="card section">
+      <span class="eyebrow">Privacy</span>
+      <p class="small-t">Your phone listens and throws away anything that isn't crying. Cry clips are deleted after 90 days. Only numbers describing each cry are kept, and they're never used to train models for other babies unless you opt in.</p>
+    </div>
+  </div>
+  <div class="cta"><button class="btn primary" data-go="devtest">Developer: stream test</button></div>`;
+
+V.devtest = () => `
+  <div class="bar"><button class="icon-btn" data-go="learned" aria-label="Back">${IC.back}</button><h2>Cry stream test</h2></div>
+  <div class="content">
+    <div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="dev-state" id="dev-state">${S.devRunning ? 'Listening' : 'Not running'}</div><div class="small-t muted" id="dev-top">Simulated NotePin S stream</div></div><div class="dev-score" id="dev-score">0.00</div></div>
+    <canvas class="dev-graph" id="dev-graph" width="700" height="220" aria-label="Smoothed cry score over the last 72 seconds"></canvas>
+    <div class="stats" id="dev-stats">chunks 0   audio 0 s   frames 0\ngaps 0 (0 ms lost)   inference – ms avg\nepisodes 0</div>
+    <button class="btn primary" data-action="devtoggle">${S.devRunning ? 'Stop test' : 'Start test'}</button>
+    <div class="two"><button class="btn soft small" style="width:100%" data-action="devcry" ${S.devRunning ? '' : 'disabled'}>Play a cry</button><button class="btn soft small" style="width:100%" data-action="devmark" ${S.devRunning ? '' : 'disabled'}>Baby is crying</button></div>
+    <div class="devlog" id="dev-log" aria-live="polite"></div>
+    <p class="small-t muted">This mirrors <b>CryStreamTestViewController</b>: 50 chunks a second go into a 0.975 s window, which is scored every 0.48 s. An episode opens at a smoothed score of 0.35 and closes after 8 s below 0.20. The scores here are simulated; the real ones come from YAMNet on the phone.</p>
+  </div>`;
+
+/* ---------- Looking after Sam ---------- */
+const TECHS = {
+  breath: { name: 'Slow breathing', note: 'In for 4, out for 6', secs: 60 },
+  ground: { name: '5-4-3-2-1', note: 'Bring yourself back to the room', secs: 50,
+    lines: ['Look around. Name 5 things you can see.', 'Notice 4 things you can feel. Your feet on the floor. Isla’s weight in your arms.', 'Listen for 3 things you can hear.', 'Find 2 things you can smell.', 'Take 1 slow breath out.'] },
+  kind: { name: 'Kind words', note: 'For when you feel you’re failing', secs: 40,
+    lines: ['This is really hard right now.', 'Lots of parents are awake feeling exactly this.', 'I’m doing my best, and my best is enough.', 'May I be patient with myself tonight.'] },
+  tension: { name: 'Let go of tension', note: 'Shoulders, hands, jaw', secs: 35,
+    lines: ['Lift your shoulders up to your ears. Hold them there.', 'Let them drop.', 'Squeeze your hands into fists. Hold.', 'Let them go soft.', 'Unclench your jaw. Let your tongue rest.'] }
+};
+const MOODS = [['Struggling', 'var(--cry)'], ['Low', 'var(--warn)'], ['OK', 'var(--c-other)'], ['Good', 'var(--c-nappy)'], ['Great', 'var(--calm)']];
+const MOOD_HISTORY = [2, 2, 3, 2, 1, 2, 2, 3, 3, 2, 3, 3, 4]; // last 13 days, 1 = struggling … 5 = great
+const SLEEP_HISTORY = [3.5, 4.0, 5.1, 3.8, 2.9, 4.2, 4.4, 5.5, 5.0, 3.6, 5.2, 5.8, 6.1];
+const CRISIS_WORDS = /(can'?t cope|cannot cope|hurt (myself|her|him|the baby|isla)|harm (myself|her|him|the baby|isla)|end it|kill|no point|give up on|want to disappear|shake (her|him|the baby|isla)|not safe)/i;
+const SETTLE_STEPS = ['Fed in the last 2 hours', 'Nappy is clean and dry', 'Winded after the last feed', 'Not too hot or too cold (feel her chest)', 'Swaddled or held close, lights low', 'White noise or a steady shush', 'Slow rocking or walking'];
+
+let calmTimer = null, awayTimer = null;
+function stopWellTimers() { clearInterval(calmTimer); calmTimer = null; clearInterval(awayTimer); awayTimer = null; }
+
+V.calm = () => {
+  const t = TECHS[S.tech];
+  const c = S.calm;
+  let stage = '';
+  if (c.done) {
+    stage = `
+      <div class="center section"><h1 class="serif" style="font-size:24px">Well done for pausing</h1><p class="muted small-t">How do you feel now?</p></div>
+      <div class="feel">${['Calmer', 'About the same', 'Worse'].map((f) => `<button data-feel="${f}" aria-pressed="${S.feel === f}">${f}</button>`).join('')}</div>
+      ${S.feel === 'Worse' ? `<div class="card section"><b>That's OK. Some nights nothing works.</b><p class="small-t muted">If Isla is safe in her cot, stepping away for 5 minutes is a good choice. Or ask Jordan to take over.</p><div class="two"><button class="btn soft small" style="width:100%" data-go="settle">Step away safely</button><button class="btn soft small" style="width:100%" data-go="tagteam">Ask Jordan</button></div></div>` : ''}`;
+  } else if (S.tech === 'breath') {
+    const cyc = Math.min(6, Math.floor(c.t / 10) + (c.running ? 1 : 0));
+    stage = `
+      <div class="orb-wrap"><div class="orb" id="orb"></div><div class="orb-label"><b id="phase">${c.running ? '' : 'Ready'}</b><span id="count">${c.running ? '' : '6 slow breaths · 1 minute'}</span></div></div>
+      <div class="dots">${Array.from({ length: 6 }, (_, i) => `<i class="${i < cyc ? 'on' : ''}"></i>`).join('')}</div>`;
+  } else {
+    const idx = Math.min(t.lines.length - 1, Math.floor(c.t / (t.secs / t.lines.length)));
+    stage = `
+      <div class="script-line" id="script-line">${c.running || c.t ? t.lines[idx] : 'Press start. Hush will read each line aloud.'}</div>
+      <div class="dots">${t.lines.map((_, i) => `<i class="${(c.running || c.t) && i <= idx ? 'on' : ''}"></i>`).join('')}</div>`;
+  }
+  return `
+  <div class="bar"><button class="icon-btn" data-go="cry" aria-label="Back">${IC.back}</button><h2>A moment for you</h2><span class="chip num">Isla · 18 min</span></div>
+  <div class="content">
+    ${c.running || c.done ? '' : `<div class="you-hero"><span class="eyebrow">Calm Coach</span><h1>This has been a long one, Sam</h1><p class="small-t">You're doing the right things. A calmer you helps Isla calm too. Take a minute for yourself.</p></div>
+    <div class="techs">${Object.entries(TECHS).map(([k, v]) => `<button class="tech" data-tech="${k}" aria-pressed="${S.tech === k}">${k === 'breath' ? '<span class="fav">Helps you most</span>' : ''}<b>${v.name}</b><span>${v.note}</span></button>`).join('')}</div>`}
+    ${stage}
+    ${c.running || c.done ? '' : '<p class="small-t muted center">Voice guide on · works with one hand, lights off</p>'}
+  </div>
+  <div class="cta">${c.done ? `<button class="btn primary" data-go="cry">Back to Isla</button>` : c.running ? `<button class="btn soft" data-action="calmstop">Stop</button>` : `<button class="btn primary" data-action="calmstart" style="background:var(--calm);color:var(--surface)">Start ${t.name.toLowerCase()}</button><button class="btn ghost" data-go="settle">Help me settle Isla instead</button>`}</div>`;
+};
+
+function calmTick() {
+  const c = S.calm, t = TECHS[S.tech];
+  c.t += 1;
+  if (c.t >= t.secs) { stopWellTimers(); c.running = false; c.done = true; S.calmUses += 1; return render(true); }
+  if (S.tech === 'breath') {
+    const inCycle = c.t % 10, inhale = inCycle < 4;
+    const orb = $('#orb'), ph = $('#phase'), ct = $('#count');
+    if (orb) {
+      if (inCycle === 0 || inCycle === 4) { orb.style.transitionDuration = (inhale ? 4 : 6) + 's'; orb.classList.toggle('big', inhale); }
+      ph.textContent = inhale ? 'Breathe in' : 'Breathe out';
+      ct.textContent = inhale ? `${4 - inCycle}` : `${10 - inCycle}`;
+    }
+    if (inCycle === 0) document.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('on', i <= Math.floor(c.t / 10)));
+  } else {
+    const per = t.secs / t.lines.length;
+    if (c.t % Math.round(per) === 0) render(false);
+  }
+}
+function calmStart() {
+  S.calm = { running: true, t: -1, done: false }; S.feel = null;
+  render(false);
+  if (S.tech === 'breath') { const orb = $('#orb'); if (orb) { orb.style.transitionDuration = '4s'; requestAnimationFrame(() => orb.classList.add('big')); } }
+  calmTick();
+  calmTimer = setInterval(calmTick, 1000);
+}
+
+V.settle = () => {
+  const done = S.settleTicks.size;
+  if (S.away !== null) {
+    const left = S.away, frac = left / 300, r = 92, circ = 2 * Math.PI * r;
+    return `
+    <div class="bar"><h2>Stepping away</h2><span class="chip num">Isla is in her cot</span></div>
+    <div class="content">
+      <svg class="away-ring" viewBox="0 0 210 210" aria-hidden="true"><circle cx="105" cy="105" r="${r}" fill="none" stroke="var(--line)" stroke-width="8"/><circle id="away-arc" cx="105" cy="105" r="${r}" fill="none" stroke="var(--calm)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - frac)}" transform="rotate(-90 105 105)"/></svg>
+      <div class="away-timer" id="away-left" style="margin-top:-150px;margin-bottom:84px">${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</div>
+      <div class="card section"><div class="row"><span class="listening"><span class="pulse"></span>Listening to Isla</span></div><p class="small-t" id="away-status">${left > 120 ? 'Crying is steady, the same as before. That’s normal. She is safe.' : 'Crying is easing off a little.'}</p></div>
+      <p class="small-t muted center">Hush will tell you straight away if her cry changes or sounds different.</p>
+    </div>
+    <div class="cta"><button class="btn soft" data-go="calm" style="border-color:var(--calm)">Breathe for 60 seconds while you wait</button><button class="btn primary" data-action="awayend">I'm ready to go back</button></div>`;
+  }
+  return `
+  <div class="bar"><button class="icon-btn" data-go="cry" aria-label="Back">${IC.back}</button><h2>Settle Guide</h2><span class="chip num">${done} of ${SETTLE_STEPS.length}</span></div>
+  <div class="content">
+    <p class="muted small-t">Go through these one by one. Tick what you've tried; there's no wrong order.</p>
+    <div class="card checks">${SETTLE_STEPS.map((s, i) => `<button data-tick="${i}" aria-pressed="${S.settleTicks.has(i)}"><span class="box">✓</span><span class="t">${s}</span><span></span></button>`).join('')}</div>
+    <div class="icon-card"><span class="l">!</span><div class="section" style="gap:6px"><b>If nothing is working, that's normal</b>
+      <p class="small-t">Some crying can't be soothed, especially around 6 to 8 weeks. <b>It's OK to walk away</b> for a few minutes once Isla is safe on her back in her cot.</p>
+      <p class="small-t">If you feel angry or overwhelmed, put her down safely first. <b>Never shake a baby.</b></p>
+      <p class="small-t muted">Based on the NHS-backed ICON programme.</p></div></div>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="awaystart" style="background:var(--calm);color:var(--surface)">She's in her cot. Start a 5-minute break</button><button class="btn ghost" data-go="label">She's settled</button></div>`;
+};
+function awayTick() {
+  S.away = Math.max(0, S.away - 1);
+  const el = $('#away-left'), arc = $('#away-arc'), st = $('#away-status');
+  if (!el) return;
+  el.textContent = `${Math.floor(S.away / 60)}:${String(S.away % 60).padStart(2, '0')}`;
+  const circ = 2 * Math.PI * 92; arc.setAttribute('stroke-dashoffset', circ * (1 - S.away / 300));
+  if (S.away === 120) st.textContent = 'Crying is easing off a little.';
+  if (S.away === 0) { stopWellTimers(); toast('5 minutes are up. Go back to Isla when you’re ready.'); }
+}
+
+V.checkin = () => {
+  if (S.checked) {
+    const moods = [...MOOD_HISTORY, S.mood + 1];
+    const avg7 = moods.slice(-7).reduce((a, b) => a + b, 0) / 7, prev7 = moods.slice(-14, -7).reduce((a, b) => a + b, 0) / Math.max(1, moods.slice(-14, -7).length);
+    return `
+    <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>How you've been</h2></div>
+    <div class="content">
+      <div class="you-hero"><span class="eyebrow">Saved · thank you</span><h1>${avg7 > prev7 ? 'Your mood has been lifting this week' : 'It’s been a heavy couple of weeks'}</h1><p class="small-t">${avg7 > prev7 ? 'Your lowest days were after nights with under 4 hours’ sleep.' : 'You don’t have to carry this alone.'}</p></div>
+      <div class="card section"><span class="eyebrow">Mood, last 14 days</span><div class="chart" id="mood-chart"></div></div>
+      <div class="card section"><b>Your 6 to 8 week check is coming up</b><p class="small-t muted">Want to answer the short wellbeing questions (10, about 3 minutes) so you can take your answers to your GP or health visitor?</p><button class="btn soft small" data-toast="The Edinburgh wellbeing questions open here. Your answers stay on your phone unless you share them.">Answer them now</button></div>
+      <p class="private">Only you can see this. It isn't shared with Jordan unless you choose to.</p>
+    </div>
+    <div class="cta"><button class="btn primary" data-go="night">Done</button></div>`;
+  }
+  return `
+  <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>How are you, Sam?</h2></div>
+  <div class="content">
+    <p class="muted small-t">20 seconds. Skip anything you like.</p>
+    <div class="section"><span class="eyebrow">Today I feel</span>
+      <div class="moods">${MOODS.map(([m, c], i) => `<button data-mood="${i}" aria-pressed="${S.mood === i}"><i style="background:${c}"></i>${m}</button>`).join('')}</div></div>
+    <div class="section"><span class="eyebrow">Sleep in the last 24 hours</span>
+      <div class="stepper"><button data-sleep="-0.5" aria-label="Less sleep">−</button><b>${Math.floor(S.sleepH)} h ${S.sleepH % 1 ? '30' : '00'} m</b><button data-sleep="0.5" aria-label="More sleep">+</button></div>
+      <span class="small-t muted">From Hush's night log: about 4 hours, in 3 pieces.</span></div>
+    <div class="section"><label class="eyebrow" for="ci-win">One small win</label><input class="text-in" id="ci-win" placeholder="e.g. We got outside for a walk" value="${esc(S.win)}"></div>
+    <div class="section"><label class="eyebrow" for="ci-note">Anything else on your mind? (optional)</label><textarea class="text-in" id="ci-note" rows="3" placeholder="Only you will see this">${esc(S.note)}</textarea></div>
+    <p class="private">Private to you. Hush checks this note for signs you need support, using fixed rules, not AI.</p>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="checkin" ${S.mood === null ? 'disabled' : ''} style="background:var(--calm);color:var(--surface)">${S.mood === null ? 'Pick how you feel' : 'Save'}</button><button class="btn ghost" data-action="crisisdemo">Demo: a note that needs support</button></div>`;
+};
+
+V.tagteam = () => `
+  <div class="bar"><button class="icon-btn" data-go="night" aria-label="Back">${IC.back}</button><h2>Tag-team tonight</h2></div>
+  <div class="content">
+    <div class="people">
+      <div class="person tired"><span class="small-t muted">Sam</span><b>3 h 40 m</b><span class="small-t">asleep · 5 wake-ups</span></div>
+      <div class="person"><span class="small-t muted">Jordan</span><b>6 h 50 m</b><span class="small-t">asleep · 1 wake-up</span></div>
+    </div>
+    <div class="you-hero"><span class="eyebrow">Suggested</span><h1>Jordan takes the next wake-up</h1><p class="small-t">Isla usually wakes for a feed around 03:30. If Jordan does that one with expressed milk, you could sleep until about 06:30.</p></div>
+    <div class="section"><label class="eyebrow" for="tt-msg">Message for Jordan</label>
+      <textarea class="text-in draft" id="tt-msg">${esc(S.tagMsg)}</textarea>
+      <p class="small-t muted">Hush drafts it; you send it. Nothing is sent from here.</p></div>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="copymsg">Copy message</button><button class="btn ghost" data-toast="Tonight's rota saved: Jordan 03:00–06:30, Sam from 06:30.">Save as tonight's rota</button></div>`;
+
+V.morning = () => `
+  <div class="bar"><h2>Good morning, Sam</h2><span class="chip">Wed 30 Sep</span></div>
+  <div class="content">
+    <div class="you-hero"><span class="eyebrow">Last night</span><h1>A hard night, and you got through it</h1><p class="small-t">3 wake-ups. The longest cry was 22 minutes at 02:14. Jordan took the 03:30 feed.</p></div>
+    <div class="card went-well section"><span class="eyebrow">What went well</span><ul>
+      <li><span class="ic">✓</span><span>You paused for slow breathing twice, and felt calmer after both.</span></li>
+      <li><span class="ic">✓</span><span>You took a 5-minute break when it was needed. That was the safe thing to do.</span></li>
+      <li><span class="ic">✓</span><span>Isla settled after rocking, the same as her last 4 tired cries.</span></li>
+      <li><span class="ic">✓</span><span>You slept 5 h 10 m in total, your most in a week.</span></li>
+    </ul></div>
+    <div class="card section"><span class="eyebrow">Worth knowing</span><p class="small-t">Many babies cry most at around 6 to 8 weeks, and it usually eases after that. Isla is 7 weeks. Her evening crying is already a little shorter than last week.</p></div>
+    <div class="card section"><span class="eyebrow">One idea for today</span><p class="small-t">Try a nap at the same time as Isla's late-morning sleep, even 20 minutes. Hush will keep listening.</p></div>
+    <span class="byline">Written from your logs by Claude Sonnet 5.5 · checked against NHS guidance</span>
+  </div>
+  <div class="cta"><button class="btn primary" data-go="checkin">Do today's check-in</button></div>`;
+
+V.crisis = () => `
+  <div class="bar"><h2>Support, right now</h2></div>
+  <div class="content">
+    <div class="crisis-hero"><span class="eyebrow" style="color:var(--calm)">You don't have to handle this alone</span><h1>Thank you for writing that down, Sam</h1><p class="small-t">What you wrote sounds really hard. Talking to someone now can help, day or night.</p></div>
+    <div class="safe-first"><b>First:</b> if Isla is with you, put her down on her back in her cot. She's safe there, even if she's crying.</div>
+    <div class="card callbox"><div><span class="small-t muted">Samaritans · free, 24 hours</span><div class="numtxt">116 123</div></div><button class="btn small soft" data-copy="116 123">Copy</button></div>
+    <div class="card callbox"><div><span class="small-t muted">NHS 111 · choose the mental health option</span><div class="numtxt">111</div></div><button class="btn small soft" data-copy="111">Copy</button></div>
+    <div class="card callbox" style="border-color:var(--cry)"><div><span class="small-t muted">If you or Isla are in danger</span><div class="numtxt" style="color:var(--cry)">999</div></div><button class="btn small soft" data-copy="999">Copy</button></div>
+    <p class="small-t muted">In the US: call or text 988, or the National Maternal Mental Health Hotline on 1-833-852-6262.</p>
+    <p class="private">Hush showed this because of words in your note. This check uses fixed rules, not AI, and your note isn't shared with anyone.</p>
+  </div>
+  <div class="cta"><button class="btn soft" data-go="tagteam">Message Jordan to come</button><button class="btn soft" data-action="openreport" data-rt="parent">Share how I've been with my GP</button><button class="btn ghost" data-action="crisisback">I'm safe. Go back</button></div>`;
+
+function drawMood() {
+  const el = $('#mood-chart'); if (!el) return;
+  const vals = [...MOOD_HISTORY, S.mood + 1];
+  const W = 340, H = 150, L = 64, R = 12, T = 12, B = 22, n = vals.length;
+  const x = (i) => L + i * (W - L - R) / (n - 1), y = (v) => T + (5 - v) / 4 * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mood over the last 14 days, rising in the last week">`;
+  MOODS.forEach(([m], i) => { const v = i + 1; s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 3.5}" text-anchor="end">${m}</text>`; });
+  s += `<text x="${L}" y="${H - 5}">2 weeks ago</text><text x="${W - R}" y="${H - 5}" text-anchor="end">Today</text>`;
+  s += `<path d="${vals.map((v, i) => `${i ? 'L' : 'M'}${x(i)} ${y(v)}`).join(' ')}" fill="none" stroke="var(--calm)" stroke-width="2"/>`;
+  vals.forEach((v, i) => { const last = i === n - 1; s += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 5.5 : 3.5}" fill="${last ? 'var(--calm)' : 'var(--card)'}" stroke="var(--calm)" stroke-width="2"><title>${last ? 'Today' : `${n - 1 - i} days ago`}: ${MOODS[v - 1][0]}${i < SLEEP_HISTORY.length ? `, ${SLEEP_HISTORY[i]} h sleep` : ''}</title></circle>`; });
+  el.innerHTML = s + '</svg>';
+}
+
+/* ---------- Listening sources: NotePin S, this iPhone, a baby monitor ---------- */
+const SRC_IC = {
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="8" y="2.5" width="8" height="15" rx="4"/><path d="M12 17.5v4M9 21.5h6"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18.5h2"/></svg>',
+  monitor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><circle cx="12" cy="13" r="3"/><path d="M9 7l3-4 3 4"/></svg>'
+};
+const MON_TYPES = {
+  stream: { name: 'Wi-Fi monitor with an audio stream', note: 'Many Wi-Fi cameras share an RTSP audio stream on your home network' },
+  parent: { name: 'Any monitor: put this iPhone by the parent unit', note: 'Works with any monitor, including audio-only ones. Slightly less accurate.' },
+  app: { name: 'Nanit, Owlet or Miku', note: 'Coming later: needs a partnership with each company', soon: true }
+};
+function srcCount() { return ['pin', 'phone', 'monitor'].filter((k) => S.src[k] === 'on').length; }
+function srcNames() {
+  const n = [];
+  if (S.src.pin === 'on') n.push('NotePin S');
+  if (S.src.phone === 'on') n.push('iPhone');
+  if (S.src.monitor === 'on') n.push(S.monType === 'parent' ? 'monitor (via iPhone)' : 'Wi-Fi monitor');
+  return n;
+}
+function bars(level) { return `<span class="bars" aria-label="Signal ${level} of 4">${[4, 7, 10, 14].map((h, i) => `<i class="${i < level ? '' : 'off'}" style="height:${h}px"></i>`).join('')}</span>`; }
+
+V.pair = () => {
+  const n = srcCount();
+  if (S.paired) {
+    return `
+  <div class="bar"><h2>Hush is listening</h2></div>
+  <div class="content">
+    <div class="big-tick">${IC.tick}</div>
+    <div class="center section"><h1 class="serif" style="font-size:26px">${n} ${n === 1 ? 'source' : 'sources'} ready</h1><p class="muted small-t">${n > 1 ? 'Hush confirms a cry when two sources hear it, so you get fewer false alarms.' : 'Add a second source any time for fewer false alarms.'}</p></div>
+    <div class="card list src-list">
+      ${S.src.pin === 'on' ? `<div class="list-row"><span class="src-ic">${SRC_IC.pin}</span><span class="grow"><b>NotePin S · 4F2A</b><br><span class="small-t muted">Clip about 1 metre from the cot · 86% battery</span></span>${bars(4)}</div>` : ''}
+      ${S.src.phone === 'on' ? `<div class="list-row"><span class="src-ic">${SRC_IC.phone}</span><span class="grow"><b>This iPhone</b><br><span class="small-t muted">Within 1 metre of the cot, plugged in, screen down</span></span>${bars(3)}</div>` : ''}
+      ${S.src.monitor === 'on' ? `<div class="list-row"><span class="src-ic">${SRC_IC.monitor}</span><span class="grow"><b>${S.monType === 'parent' ? 'Baby monitor, via this iPhone' : 'Wi-Fi monitor'}</b><br><span class="small-t muted">${S.monType === 'parent' ? 'iPhone next to the parent unit, volume at half' : 'Audio stream on your home network'}</span></span>${bars(S.monType === 'parent' ? 2 : 3)}</div>` : ''}
+    </div>
+    <p class="small-t muted center">Only cries are kept. Everything else is deleted on your phone right away.</p>
+  </div>
+  <div class="cta"><button class="btn primary" data-go="night">Start night mode</button><button class="btn ghost" data-action="srcedit">Change sources</button></div>`;
+  }
+  const state = (k) => ({ on: 'Connected', busy: 'Connecting…', off: 'Not set up' })[S.src[k]];
+  return `
+  <div class="bar"><h2>How should Hush listen?</h2></div>
+  <div class="content">
+    <p class="muted small-t">Pick one or more. Two sources together catch more cries and give fewer false alarms.</p>
+    <div class="src ${S.src.pin === 'on' ? 'on' : ''}">
+      <div class="src-head"><span class="src-ic">${SRC_IC.pin}</span><span><b>NotePin S</b><br><span class="small-t muted">Clip-on mic · clearest sound · 20 h battery</span></span><span class="src-state">${state('pin')}</span></div>
+      ${S.src.pin === 'off' ? '<button class="btn soft small" data-src="pin">Connect NotePin S</button><span class="small-t muted">Hold the pin’s button for 3 seconds until the light flashes. The original NotePin isn’t supported.</span>' : S.src.pin === 'on' ? '<button class="btn ghost small" data-srcoff="pin">Remove</button>' : ''}
+    </div>
+    <div class="src ${S.src.phone === 'on' ? 'on' : ''}">
+      <div class="src-head"><span class="src-ic">${SRC_IC.phone}</span><span><b>This iPhone</b><br><span class="small-t muted">No extra device · leave it by the cot on charge</span></span><span class="src-state">${state('phone')}</span></div>
+      ${S.src.phone === 'off' ? '<button class="btn soft small" data-src="phone">Use this iPhone’s microphone</button>' : S.src.phone === 'on' ? '<button class="btn ghost small" data-srcoff="phone">Remove</button>' : ''}
+    </div>
+    <div class="src ${S.src.monitor === 'on' ? 'on' : ''}">
+      <div class="src-head"><span class="src-ic">${SRC_IC.monitor}</span><span><b>Your baby monitor</b><br><span class="small-t muted">Use the monitor you already have</span></span><span class="src-state">${state('monitor')}</span></div>
+      ${S.src.monitor === 'on' ? '<button class="btn ghost small" data-srcoff="monitor">Remove</button>' : `
+      <div class="mon-opts">${Object.entries(MON_TYPES).map(([k, t]) => `<button class="mon-opt ${t.soon ? 'soon' : ''}" data-mon="${k}" aria-pressed="${S.monType === k}"><b>${t.name}</b><span>${t.note}</span></button>`).join('')}</div>
+      ${S.monType === 'stream' ? `<label class="eyebrow" for="mon-url">Stream address (from your monitor’s app)</label><input class="text-in" id="mon-url" value="${esc(S.monUrl)}" placeholder="rtsp://192.168.1.40:554/audio"><button class="btn soft small" data-src="monitor" ${S.monUrl.trim() ? '' : 'disabled'}>Test and connect</button>` : ''}
+      ${S.monType === 'parent' ? `<p class="small-t muted">Put this iPhone next to the monitor’s parent unit, with the parent unit’s volume at about half.</p><button class="btn soft small" data-src="monitor">Listen through the parent unit</button>` : ''}`}
+    </div>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="srcdone" ${n ? '' : 'disabled'}>${n ? `Continue with ${n} ${n === 1 ? 'source' : 'sources'}` : 'Choose at least one'}</button></div>`;
+};
+function connectSource(k) {
+  if (k === 'monitor' && S.monType === 'parent' && S.src.phone === 'on') { S.src.phone = 'off'; toast('This iPhone now listens through the parent unit, so it’s no longer also by the cot.'); }
+  if (k === 'phone' && S.src.monitor === 'on' && S.monType === 'parent') { toast('This iPhone is already listening through the parent unit.'); return; }
+  S.src[k] = 'busy'; render(false);
+  const msg = { pin: 'Found NotePin S · 4F2A. Connected.', phone: 'Microphone on. The screen can dim; Hush keeps listening.', monitor: S.monType === 'parent' ? 'Hearing the parent unit clearly.' : 'Stream found. Audio is coming through.' }[k];
+  setTimeout(() => { S.src[k] = 'on'; render(false); toast(msg); }, 900);
+}
+
+
+/* ---------- Reports for Isla's health team (real PDFs via the downloads capability) ---------- */
+const CRY_MIN_DAILY = [118, 124, 131, 120, 135, 128, 112, 104, 109, 98, 101, 92, 88, 94, 86, 90, 84, 82, 88, 79, 81, 76, 80, 74, 77, 72, 75, 70]; // last 28 days, minutes of crying per day
+const CAUSE_14 = [['Tired', 58], ['Hungry', 47], ['Wind', 26], ['Nappy', 11], ['Other or not sure', 18]];
+const REPORTS = {
+  hv: { name: 'Health visitor summary', note: 'Feeding, sleep and crying trends', file: 'Hush - Isla - health visitor summary', to: 'Health visitor' },
+  urgent: { name: 'Urgent summary for a doctor', note: 'The unusual cry and the last 24 hours', file: 'Hush - Isla - urgent summary', to: 'GP or NHS 111', cls: 'urgent' },
+  parent: { name: 'My wellbeing, for my GP', note: 'Sam’s mood and sleep. Private unless you send it', file: 'Hush - Sam - wellbeing summary', to: 'Sam’s GP', cls: 'mine' }
+};
+let downloadsNs = null;
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then((n) => { downloadsNs = n; if (S.screen === 'reports') render(false); }); } catch (e) { /* no viewer */ }
+
+function reportDays() { return S.rep.type === 'urgent' ? 1 : S.rep.days; }
+function avg(a) { return a.reduce((x, y) => x + y, 0) / Math.max(1, a.length); }
+function crySeries() { return CRY_MIN_DAILY.slice(-S.rep.days); }
+
+V.reports = () => {
+  const r = S.rep, t = REPORTS[r.type];
+  if (r.sending) {
+    return `
+    <div class="bar"><button class="icon-btn" data-action="repback" aria-label="Back">${IC.back}</button><h2>Send the report</h2></div>
+    <div class="content">
+      <div class="send-sheet">
+        <span class="eyebrow">${esc(t.name)}</span>
+        <div class="field section" style="gap:6px"><label class="eyebrow" for="rep-to">Send to</label>
+          <select class="text-in" id="rep-to">${['Isla’s health visitor team', 'Our GP practice', 'Someone else (enter an email)'].map((o) => `<option ${r.to === o ? 'selected' : ''}>${o}</option>`).join('')}</select></div>
+        <div class="field section" style="gap:6px"><label class="eyebrow" for="rep-email">Their secure email</label>
+          <input class="text-in" id="rep-email" value="${esc(r.email)}" placeholder="team@nhs.net"></div>
+        <p class="small-t muted">Hush sends a secure link, not an attachment. The link expires after 14 days, and Hush tells you when it has been opened. You can withdraw it at any time.</p>
+      </div>
+      <p class="small-t muted center">Prototype: nothing is sent from here.</p>
+    </div>
+    <div class="cta"><button class="btn primary" data-action="repsend" ${r.email.trim() ? '' : 'disabled'}>Send secure link</button><button class="btn ghost" data-action="repback">Cancel</button></div>`;
+  }
+  const opts = r.type === 'urgent'
+    ? [['feeds', 'Feeds and nappies, last 24 hours'], ['tried', 'What we tried'], ['wellbeing', 'How Sam is feeling']]
+    : r.type === 'parent'
+      ? [['sleep', 'Sleep, from Hush’s night log'], ['calm', 'How often Calm Coach and breaks were used'], ['notes', 'My check-in notes (off unless I choose)']]
+      : [['causes', 'What settled her, by cause'], ['redflags', 'Unusual cries flagged'], ['wellbeing', 'How Sam is feeling (off unless I choose)']];
+  return `
+  <div class="bar"><button class="icon-btn" data-go="${r.back}" aria-label="Back">${IC.back}</button><h2>Reports</h2></div>
+  <div class="content">
+    <div class="rtypes">${Object.entries(REPORTS).map(([k, v]) => `<button class="rtype ${v.cls || ''}" data-rtype="${k}" aria-pressed="${r.type === k}"><b>${v.name}</b><span class="small-t">${k === 'urgent' ? 'Now' : 'For'}: ${v.to}</span><span>${v.note}</span></button>`).join('')}</div>
+    ${r.type === 'urgent' ? '' : `<div class="section"><span class="eyebrow">Period</span><div class="seg">${[7, 14, 28].map((d) => `<button data-rdays="${d}" aria-pressed="${r.days === d}">${d} days</button>`).join('')}<button data-toast="Pick any dates in the real app.">Custom</button></div></div>`}
+    <div class="card"><span class="eyebrow">Include</span>${opts.map(([k, l]) => `<div class="opt-row"><span class="small-t">${l}</span><button class="sw-toggle" role="switch" data-ropt="${k}" aria-checked="${!!r.inc[k]}" aria-label="${esc(l)}"></button></div>`).join('')}</div>
+    <div class="section"><label class="eyebrow" for="rep-q">${r.type === 'urgent' ? 'What worries you most' : 'Questions for the appointment'}</label><textarea class="text-in" id="rep-q" rows="3">${esc(r.q[r.type])}</textarea></div>
+    <div class="section"><span class="eyebrow">Preview</span>${previewPaper()}</div>
+    <p class="private">${r.type === 'parent' ? 'This report is about you. Only you decide who sees it.' : 'Nothing about Sam’s wellbeing is included unless you turn it on.'}</p>
+  </div>
+  <div class="cta"><button class="btn primary" data-action="repdownload">Download PDF</button><button class="btn soft" data-action="repsendsheet">Send to ${t.to === 'GP or NHS 111' ? 'our GP' : t.to === 'Sam’s GP' ? 'my GP' : 'her health visitor'}</button></div>`;
+};
+
+function previewPaper() {
+  const r = S.rep, t = REPORTS[r.type];
+  const today = '29 September 2026';
+  let body = '';
+  if (r.type === 'hv') {
+    const s = crySeries(), m = Math.max(...s);
+    body = `<div class="kv"><div>Crying a day<b>${Math.round(avg(s.slice(-7)))} min</b></div><div>Feeds a day<b>7.4</b></div><div>Sleep a day<b>14 h 50 m</b></div></div>
+      <div class="band">Crying minutes per day, last ${r.days} days</div><div class="pbars">${s.map((v) => `<i style="height:${v / m * 100}%"></i>`).join('')}</div>
+      <div>Crying is down ${Math.round((1 - avg(s.slice(-7)) / avg(s.slice(0, 7))) * 100)}% from the first week of this period. Evenings (17:00-20:00) remain the hardest.</div>
+      ${r.inc.causes ? `<div><span class="band">What settled her</span><br>${CAUSE_14.map(([c, n]) => `${c} ${n}`).join(' · ')}</div>` : ''}
+      ${r.inc.redflags ? '<div class="alert"><b>1 unusual cry flagged</b> on 29 Sep at 02:51: higher and weaker than usual for 4 minutes.</div>' : ''}
+      ${r.inc.wellbeing ? '<div><span class="band">Sam (parent)</span><br>Mood mostly Low to OK, lifting this week. Averaging 4 h 30 m sleep.</div>' : ''}`;
+  } else if (r.type === 'urgent') {
+    body = `<div class="alert"><b>Unusual cry at 02:51 today, lasting 4 min 10 s.</b> Pitch was well above Isla’s usual range, and the cry was weaker. Flagged automatically by Hush.</div>
+      <div class="kv"><div>Age<b>7 weeks</b></div><div>Last feed<b>01:10</b></div><div>Wet nappies (24 h)<b>6</b></div></div>
+      ${r.inc.feeds ? '<div><span class="band">Last 24 hours</span><br>7 feeds, 6 wet nappies, 2 dirty. Sleep 14 h 20 m. 9 crying episodes, 88 min in total.</div>' : ''}
+      ${r.inc.tried ? '<div><span class="band">What we tried</span><br>Feed at 01:10, winding, rocking. She settled at 03:05.</div>' : ''}
+      ${r.inc.wellbeing ? '<div><span class="band">Sam (parent)</span><br>Very tired, 3 h 40 m sleep in the last 24 hours.</div>' : ''}`;
+  } else {
+    body = `<div class="kv"><div>Mood this week<b>Low to OK</b></div><div>Sleep a night<b>4 h 30 m</b></div><div>Check-ins<b>13 of 14</b></div></div>
+      <div class="band">Mood, last ${r.days} days (1 Struggling to 5 Great)</div><div class="pbars">${[...MOOD_HISTORY, S.mood === null ? 3 : S.mood + 1].slice(-r.days).map((v) => `<i style="height:${v * 20}%;background:#1C7A54"></i>`).join('')}</div>
+      ${r.inc.sleep ? '<div><span class="band">Sleep</span><br>Mostly 3 to 5 hours a night, in 2 to 4 pieces.</div>' : ''}
+      ${r.inc.calm ? `<div><span class="band">Support used</span><br>Calm Coach ${6 + S.calmUses} times, safe breaks 3 times, tag-team handovers 4 times.</div>` : ''}
+      ${r.inc.notes ? '<div><span class="band">Check-in notes</span><br>Included as written.</div>' : ''}
+      <div>Edinburgh wellbeing questions: not yet completed.</div>`;
+  }
+  const q = r.q[r.type].trim();
+  return `<div class="paper" aria-label="Report preview">
+    <div class="ph"><div><b>${t.name}</b><div class="band">Isla, born 11 Aug 2026 · parent Sam</div></div><div class="band" style="text-align:right">Hush report<br>${today}</div></div>
+    ${body}
+    ${q ? `<div><span class="band">${r.type === 'urgent' ? 'Parent’s main worry' : 'Questions'}</span><br>${esc(q)}</div>` : ''}
+    <div class="foot">Made by Hush from home monitoring and what the parent logged. Not a medical device and not a diagnosis. If you are worried about a baby, seek medical advice.</div>
+  </div>`;
+}
+
+function buildPdf() {
+  const { jsPDF } = window.jspdf;
+  const r = S.rep, t = REPORTS[r.type];
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 18;
+  let y = 20;
+  const ink = [27, 32, 51], muted = [92, 99, 133], line = [224, 227, 239];
+  const clean = (s) => String(s).replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
+  const text = (s, x, yy, o = {}) => { s = clean(s); doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size || 10.5); doc.setTextColor(...(o.color || ink)); doc.text(s, x, yy, o.align ? { align: o.align } : undefined); };
+  const para = (s, o = {}) => { s = clean(s); doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size || 10.5); doc.setTextColor(...(o.color || ink)); const lines = doc.splitTextToSize(s, W - 2 * M); doc.text(lines, M, y); y += lines.length * (o.size || 10.5) * 0.45 + 3; };
+  const band = (s) => { y += 2; text(s.toUpperCase(), M, y, { size: 8.5, bold: true, color: muted }); y += 5; };
+  const hr = () => { doc.setDrawColor(...line); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 5; };
+
+  text('Hush', M, y, { size: 11, bold: true, color: muted }); text('29 September 2026', W - M, y, { size: 9.5, color: muted, align: 'right' }); y += 9;
+  text(t.name, M, y, { size: 20, bold: true }); y += 7;
+  text('Isla  |  born 11 August 2026 (7 weeks)  |  parent: Sam', M, y, { size: 10.5, color: muted }); y += 4;
+  doc.setDrawColor(...ink); doc.setLineWidth(0.6); doc.line(M, y, W - M, y); y += 8;
+
+  const tiles = (items) => {
+    const w = (W - 2 * M - 8) / 3;
+    items.forEach(([k, v], i) => {
+      const x = M + i * (w + 4);
+      doc.setFillColor(242, 243, 250); doc.roundedRect(x, y, w, 17, 2, 2, 'F');
+      text(k, x + 4, y + 6, { size: 8.5, color: muted }); text(v, x + 4, y + 13, { size: 13, bold: true });
+    });
+    y += 24;
+  };
+  const barChart = (vals, color, label, maxV) => {
+    band(label);
+    const h = 38, x0 = M + 10, w = W - 2 * M - 10, m = maxV || Math.max(...vals), bw = w / vals.length;
+    doc.setDrawColor(...line); doc.setLineWidth(0.2);
+    [0, 0.5, 1].forEach((f) => { const yy = y + h - f * h; doc.line(x0, yy, x0 + w, yy); text(String(Math.round(f * m)), x0 - 2, yy + 1, { size: 7.5, color: muted, align: 'right' }); });
+    doc.setFillColor(...color);
+    vals.forEach((v, i) => { const bh = v / m * h; doc.rect(x0 + i * bw + bw * 0.15, y + h - bh, bw * 0.7, bh, 'F'); });
+    y += h + 4;
+    text(`${vals.length} days ago`, x0, y, { size: 7.5, color: muted }); text('Today', x0 + w, y, { size: 7.5, color: muted, align: 'right' }); y += 7;
+  };
+  const alertBox = (title, body) => { title = clean(title); body = clean(body);
+    const lines = doc.splitTextToSize(body, W - 2 * M - 10);
+    const h = 10 + lines.length * 4.8;
+    doc.setFillColor(252, 229, 235); doc.rect(M, y, W - 2 * M, h, 'F'); doc.setFillColor(194, 51, 79); doc.rect(M, y, 1.4, h, 'F');
+    text(title, M + 5, y + 6.5, { size: 11, bold: true, color: [150, 30, 55] });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...ink); doc.text(lines, M + 5, y + 12);
+    y += h + 6;
+  };
+
+  if (r.type === 'hv') {
+    const s = crySeries();
+    tiles([['Crying a day (last 7 days)', `${Math.round(avg(s.slice(-7)))} min`], ['Feeds a day', '7.4'], ['Sleep a day', '14 h 50 m']]);
+    barChart(s, [68, 98, 214], `Crying, minutes per day, last ${r.days} days`);
+    para(`Crying is down ${Math.round((1 - avg(s.slice(-7)) / avg(s.slice(0, 7))) * 100)}% from the first week of this period. Most crying is between 17:00 and 20:00, and parents mostly label it as tiredness. Night feeds have stretched from about 2 h 10 m to 2 h 40 m apart.`);
+    if (r.inc.causes) { band('What settled her, last 14 days (parent-labelled)'); CAUSE_14.forEach(([c, n]) => { text(c, M, y); text(String(n), M + 70, y, { bold: true }); y += 5.5; }); y += 2; }
+    if (r.inc.redflags) alertBox('1 unusual cry flagged', '29 September at 02:51: higher-pitched and weaker than Isla’s usual cries for 4 minutes 10 seconds. Parents were shown NHS advice. She settled at 03:05.');
+    if (r.inc.wellbeing) { band('Parent wellbeing (shared by Sam)'); para('Mood mostly Low to OK over two weeks, lifting in the last week. Averaging about 4 h 30 m sleep a night. Edinburgh wellbeing questions not yet completed.'); }
+  } else if (r.type === 'urgent') {
+    alertBox('Unusual cry today at 02:51, lasting 4 min 10 s', 'Pitch was well above Isla’s usual range for her age, and the cry was weaker than normal. Hush flags cries like this for a parent to seek advice; it does not diagnose.');
+    tiles([['Age', '7 weeks'], ['Last feed', '01:10'], ['Wet nappies (24 h)', '6']]);
+    if (r.inc.feeds) { band('Last 24 hours'); para('7 feeds (breast and expressed milk), 6 wet and 2 dirty nappies. 14 h 20 m asleep. 9 crying episodes, 88 minutes of crying in total, similar to recent days apart from the flagged cry.'); }
+    if (r.inc.tried) { band('What the parents tried'); para('Fed at 01:10. Winding, then rocking in a dim room. She settled at 03:05 and has fed since.'); }
+    if (r.inc.wellbeing) { band('Parent (shared by Sam)'); para('Very tired: 3 h 40 m sleep in the last 24 hours.'); }
+    band('Not measured by Hush'); para('Temperature, breathing rate, skin colour, rash or feeding volume. Please ask the parents directly.', { color: muted });
+  } else {
+    const moods = [...MOOD_HISTORY, S.mood === null ? 3 : S.mood + 1].slice(-r.days);
+    tiles([['Mood this week', 'Low to OK'], ['Sleep a night', '4 h 30 m'], ['Check-ins done', '13 of 14']]);
+    barChart(moods, [28, 122, 84], `Daily mood, 1 = Struggling to 5 = Great, last ${moods.length} days`, 5);
+    if (r.inc.sleep) { band('Sleep'); para('Mostly 3 to 5 hours a night, broken into 2 to 4 pieces. Longest block this week: 3 h 10 m.'); }
+    if (r.inc.calm) { band('Support used in the app'); para(`Calm Coach ${6 + S.calmUses} times, safe 5-minute breaks 3 times, night handovers with partner 4 times.`); }
+    if (r.inc.notes) { band('Check-in notes (shared by Sam)'); para(S.note.trim() || 'No notes written.'); }
+    para('Edinburgh wellbeing questions: not yet completed.', { color: muted });
+  }
+  const q = r.q[r.type].trim();
+  if (q) { band(r.type === 'urgent' ? 'The parent’s main worry' : 'Questions for the appointment'); para(q); }
+  y = Math.max(y, 262);
+  hr();
+  para('Made by Hush from home audio monitoring and what the parent logged. Hush is not a medical device and this is not a diagnosis. Audio clips are kept on the parent’s phone and can be shared on request. If you are worried about a baby, seek medical advice: NHS 111, or 999 in an emergency.', { size: 8.5, color: muted });
+  return doc;
+}
+
+async function downloadReport() {
+  if (!window.jspdf) return toast('The PDF tool didn’t load. Check your connection and try again.');
+  const doc = buildPdf();
+  const fname = REPORTS[S.rep.type].file + '.pdf';
+  if (!downloadsNs) {
+    // On the public website: a normal browser download.
+    const url = URL.createObjectURL(doc.output('blob'));
+    const a = document.createElement('a'); a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return toast('PDF downloaded.');
+  }
+  try {
+    await downloadsNs.save({ filename: fname, data: doc.output('blob') });
+    toast('PDF saved.');
+  } catch (e) {
+    const code = e && e.code;
+    toast(code === 'declined' ? 'Download cancelled.' : code === 'rate_limited' ? 'A save is already waiting for your answer.' : 'Couldn’t save the PDF here.');
+  }
+}
+
+/* ---------- Charts ---------- */
+function hhmm(h) { const m = Math.round(h * 60); return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+
+function sparkBars(k) {
+  const seed = { tired: [3, 5, 8, 11, 13, 14, 14, 13], hungry: [9, 4, 10, 3, 11, 4, 9, 3], wind: [14, 6, 12, 5, 13, 4, 7, 3], nappy: [6, 7, 6, 8, 6, 7, 6, 7] }[k];
+  return seed.map((v) => `<i style="height:${v * 1.6 + 2}px;background:${CAUSE[k].color}"></i>`).join('');
+}
+
+function drawDay() {
+  const el = $('#day-chart'); if (!el) return;
+  const W = 340, H = 118, L = 8, R = 8, top = 10, x = (h) => L + (h / 24) * (W - L - R);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yesterday's sleep, feeds and cries">`;
+  [0, 6, 12, 18, 24].forEach((h) => { s += `<line class="grid" x1="${x(h)}" x2="${x(h)}" y1="${top}" y2="${H - 22}"/><text x="${x(h)}" y="${H - 6}" text-anchor="${h === 0 ? 'start' : h === 24 ? 'end' : 'middle'}">${h === 24 ? '24:00' : String(h).padStart(2, '0') + ':00'}</text>`; });
+  s += `<text x="${L}" y="${top + 16}" style="font-size:9.5px">SLEEP</text>`;
+  YESTERDAY.sleep.forEach(([a, b]) => { s += `<rect x="${x(a) + 1}" y="${top + 22}" width="${Math.max(x(b) - x(a) - 2, 2)}" height="16" rx="4" fill="var(--card-2)" stroke="var(--line)"/>`; });
+  s += `<text x="${L}" y="${top + 56}" style="font-size:9.5px">FEEDS · CRIES</text>`;
+  YESTERDAY.feeds.forEach((h) => { s += `<path d="M${x(h)} ${top + 62} l4 7 h-8 z" fill="var(--muted)"/>`; });
+  YESTERDAY.cries.forEach(([h, k, m], i) => { s += `<circle class="hit" data-i="${i}" cx="${x(h)}" cy="${top + 78}" r="${Math.min(4 + m / 3, 9)}" fill="${CAUSE[k].color}" stroke="var(--card)" stroke-width="2"/>`; });
+  s += '</svg><div class="tip" id="day-tip"></div>';
+  el.innerHTML = s;
+  const tip = $('#day-tip');
+  el.querySelectorAll('.hit').forEach((c) => {
+    const show = () => { const [h, k, m] = YESTERDAY.cries[c.dataset.i]; const r = el.getBoundingClientRect(), b = c.getBoundingClientRect(); tip.textContent = `${hhmm(h)} · ${CAUSE[k].label} · ${m} min`; tip.style.left = (b.left - r.left + b.width / 2) + 'px'; tip.style.top = (b.top - r.top) + 'px'; tip.classList.add('show'); };
+    c.addEventListener('mouseenter', show); c.addEventListener('click', show);
+    c.addEventListener('mouseleave', () => tip.classList.remove('show'));
+  });
+}
+
+function drawWeek() {
+  const el = $('#week-chart'); if (!el) return;
+  const W = 340, H = 150, L = 22, B = 22, T = 8, max = 16, bw = (W - L) / WEEK.length;
+  const y = (v) => T + (1 - v / max) * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cries per day this week, from 16 on Tuesday to 12 on Monday">`;
+  [0, 4, 8, 12, 16].forEach((v) => { s += `<line class="grid" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`; });
+  WEEK.forEach(([d, v], i) => {
+    const bx = L + i * bw + bw * 0.22, w = bw * 0.56, last = i === WEEK.length - 1;
+    s += `<path class="hit" data-i="${i}" d="M${bx} ${y(0)} V${y(v) + 4} q0 -4 4 -4 h${w - 8} q4 0 4 4 V${y(0)} z" fill="${last ? 'var(--accent)' : 'var(--c-tired)'}" opacity="${last ? 1 : .75}"/>`;
+    s += `<text x="${bx + w / 2}" y="${H - 6}" text-anchor="middle">${d}</text>`;
+    if (last || i === 0) s += `<text x="${bx + w / 2}" y="${y(v) - 6}" text-anchor="middle" style="fill:var(--ink)">${v}</text>`;
+  });
+  s += '</svg><div class="tip" id="week-tip"></div>';
+  el.innerHTML = s;
+  const tip = $('#week-tip');
+  el.querySelectorAll('.hit').forEach((p) => {
+    const show = () => { const [d, v] = WEEK[p.dataset.i]; const r = el.getBoundingClientRect(), b = p.getBoundingClientRect(); tip.textContent = `${d}: ${v} cries`; tip.style.left = (b.left - r.left + b.width / 2) + 'px'; tip.style.top = (b.top - r.top) + 'px'; tip.classList.add('show'); };
+    p.addEventListener('mouseenter', show); p.addEventListener('click', show);
+    p.addEventListener('mouseleave', () => tip.classList.remove('show'));
+  });
+}
+
+/* ---------- Night meter + cry timer ---------- */
+let meterTimer = null, cryTimer = null, cryStart = 0;
+function startMeter() {
+  clearInterval(meterTimer);
+  meterTimer = setInterval(() => {
+    const bars = document.querySelectorAll('#meter i');
+    if (!bars.length) return clearInterval(meterTimer);
+    bars.forEach((b) => { b.style.height = (3 + Math.random() * 7 + (Math.random() < .05 ? 12 : 0)) + 'px'; });
+  }, 260);
+}
+function startCryTimer() {
+  clearInterval(cryTimer); cryStart = Date.now() - 12000;
+  cryTimer = setInterval(() => {
+    const t = $('#cry-timer'); if (!t) return clearInterval(cryTimer);
+    const s = Math.floor((Date.now() - cryStart) / 1000); t.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }, 1000);
+}
+
+/* ---------- Dev stream test simulation (mirrors CryDetector logic) ---------- */
+const D = { start: 0.35, stop: 0.20, smooth: 3, endAfter: 8, hop: 0.48 };
+let dev = null;
+function devReset() {
+  return { t: 0, chunks: 0, frames: 0, gaps: 0, lost: 0, eps: 0, inf: 0, recent: [], hist: [], open: null, lastLoud: 0, peak: 0, cryUntil: -1, cryFrom: -1, log: [], timers: [] };
+}
+function devLog(cls, text) {
+  const t = new Date(Date.now()).toTimeString().slice(0, 8);
+  dev.log.unshift(`<span class="${cls}">${text.padEnd(10)}</span> ${t}${arguments[2] ? '  ' + arguments[2] : ''}`);
+  dev.log = dev.log.slice(0, 40);
+  const el = $('#dev-log'); if (el) el.innerHTML = dev.log.join('\n');
+}
+function devFrame() {
+  dev.t += D.hop; dev.frames++;
+  const inCry = dev.t >= dev.cryFrom && dev.t <= dev.cryUntil;
+  const ramp = inCry ? Math.min(1, (dev.t - dev.cryFrom) / 1.5) : 0;
+  let raw = inCry ? 0.55 + 0.35 * ramp * (0.8 + Math.random() * 0.2) : 0.01 + Math.random() * 0.06 + (Math.random() < 0.03 ? 0.18 : 0);
+  raw = Math.min(raw, 0.99);
+  dev.recent.push(raw); if (dev.recent.length > D.smooth) dev.recent.shift();
+  const sm = dev.recent.reduce((a, b) => a + b, 0) / dev.recent.length;
+  const inf = 9 + Math.random() * 5; dev.inf += inf;
+  if (dev.open !== null) {
+    if (sm >= D.stop) { dev.lastLoud = dev.t; dev.peak = Math.max(dev.peak, sm); }
+    if (dev.t - dev.lastLoud >= D.endAfter) {
+      dev.eps++;
+      devLog('c', 'CRY END', `${Math.round(dev.t - dev.open)}s  peak ${dev.peak.toFixed(2)}  cry-${stamp()}.wav`);
+      dev.open = null;
+    }
+  } else if (sm >= D.start) {
+    dev.open = dev.t; dev.lastLoud = dev.t; dev.peak = sm;
+    devLog('c', 'CRY START', `score ${sm.toFixed(2)}`);
+  }
+  if (Math.random() < 0.004) { const ms = 60 + Math.round(Math.random() * 180); dev.gaps++; dev.lost += ms; devLog('g', 'GAP', `${ms} ms of audio missing`); }
+  dev.hist.push([sm, dev.open !== null]); if (dev.hist.length > 150) dev.hist.shift();
+  const top = inCry ? 'Baby cry, infant cry' : (raw > 0.15 ? 'Speech' : 'Silence');
+  const sc = $('#dev-score'); if (sc) { sc.textContent = sm.toFixed(2); sc.style.color = dev.open !== null ? 'var(--cry)' : 'var(--ink)'; }
+  const st = $('#dev-state'); if (st) st.textContent = dev.open !== null ? 'Crying detected' : 'Listening';
+  const tp = $('#dev-top'); if (tp) tp.textContent = 'Top sound: ' + top;
+  drawDevGraph();
+}
+function stamp() { const d = new Date(); return d.toISOString().slice(0, 10).replace(/-/g, '') + '-' + d.toTimeString().slice(0, 8).replace(/:/g, ''); }
+function drawDevGraph() {
+  const c = $('#dev-graph'); if (!c) return;
+  const g = c.getContext('2d'), W = c.width, H = c.height, cs = getComputedStyle(document.documentElement);
+  g.clearRect(0, 0, W, H);
+  const w = W / 150;
+  dev.hist.forEach(([v, cry], i) => { g.fillStyle = cs.getPropertyValue(cry ? '--cry' : '--c-tired').trim(); const h = H * Math.min(v, 1); g.fillRect(i * w, H - h, Math.max(w - 1.5, 1), h); });
+  [[D.start, '--cry'], [D.stop, '--muted']].forEach(([t, col]) => { g.strokeStyle = cs.getPropertyValue(col).trim(); g.setLineDash([8, 8]); g.lineWidth = 2; g.beginPath(); g.moveTo(0, H * (1 - t)); g.lineTo(W, H * (1 - t)); g.stroke(); });
+  g.setLineDash([]);
+}
+function devStats() {
+  dev.chunks += 50;
+  const el = $('#dev-stats'); if (!el) return;
+  el.textContent = `chunks ${dev.chunks}   audio ${Math.round(dev.chunks / 50)} s   frames ${dev.frames}\ngaps ${dev.gaps} (${dev.lost} ms lost)   inference ${dev.frames ? (dev.inf / dev.frames).toFixed(1) : '–'} ms avg (sim)\nepisodes ${dev.eps}`;
+}
+function devStart() {
+  dev = devReset(); S.devRunning = true; render(false);
+  devLog('s', 'SESSION', 'started, log: frames.csv');
+  dev.timers.push(setInterval(devFrame, D.hop * 1000), setInterval(devStats, 1000));
+  drawDevGraph();
+}
+function devStop() {
+  if (!dev) return; dev.timers.forEach(clearInterval); dev.timers = [];
+  if (dev.open !== null) { dev.eps++; devLog('c', 'CRY END', `${Math.round(dev.t - dev.open)}s  (flushed on stop)`); dev.open = null; }
+  devLog('s', 'SESSION', 'stopped');
+  S.devRunning = false; render(false); $('#dev-log').innerHTML = dev.log.join('\n'); devStats(); drawDevGraph();
+}
+
+/* ---------- Render, navigation ---------- */
+const screenEl = $('#screen');
+function buildNav() {
+  let html = '', last = '';
+  STEPS.forEach(([id, label, grp], i) => {
+    if (grp !== last) { html += `<li class="group-label">${grp === 'Parent' ? "Sam's view: Isla" : grp === 'You' ? 'Looking after Sam' : 'Developer'}</li>`; last = grp; }
+    html += `<li><button class="step" data-go="${id}" data-step="${id}"><span class="n">${i + 1}</span><span class="label">${label}</span></button></li>`;
+  });
+  $('#steps').innerHTML = html;
+  $('#step-select').innerHTML = STEPS.map(([id, label], i) => `<option value="${id}">${i + 1}. ${label}</option>`).join('');
+}
+function render(animate) {
+  screenEl.innerHTML = V[S.screen]();
+  if (animate) { screenEl.classList.remove('enter'); void screenEl.offsetWidth; screenEl.classList.add('enter'); }
+  const pill = $('#role-pill');
+  const dev = S.screen === 'devtest';
+  pill.className = 'pill ' + (dev ? 'dev' : S.paired ? 'live' : '');
+  pill.textContent = dev ? 'Test build' : S.paired ? `Listening · ${srcCount()} ${srcCount() === 1 ? 'source' : 'sources'}` : 'Not set up';
+  $('#clock').textContent = ({ timeline: '09:05', profile: '09:05', insights: '09:05', reports: '09:20', morning: '07:10', checkin: '21:30', calm: '02:32', settle: '02:35', tagteam: '02:44', crisis: '21:32' })[S.screen] || '02:14';
+  document.querySelectorAll('.step').forEach((b) => { const on = b.dataset.step === S.screen; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'step' : 'false'); });
+  $('#step-select').value = S.screen;
+  if (S.screen === 'night') startMeter();
+  if (S.screen === 'cry') startCryTimer();
+  if (S.screen === 'timeline') drawDay();
+  if (S.screen === 'insights') drawWeek();
+  if (S.screen === 'checkin' && S.checked) drawMood();
+  if (S.screen === 'devtest' && window.dev) { const l = $('#dev-log'); if (l) l.innerHTML = window.dev.log.join('\n'); drawDevGraph(); }
+}
+function go(screen) {
+  if (S.screen === 'devtest' && screen !== 'devtest' && S.devRunning) devStop();
+  if (screen !== 'pair' && !S.paired) { if (!srcCount()) { S.src.pin = 'on'; S.src.phone = 'on'; } S.paired = true; }
+  if (screen !== S.screen) stopWellTimers();
+  if (screen === 'calm') { S.calm = { running: false, t: 0, done: false }; S.feel = null; }
+  if (screen !== 'settle') S.away = null;
+  if (screen === 'label' && S.label && S.took) { S.label = null; S.took = null; }
+  S.screen = screen; render(true); screenEl.scrollTop = 0;
+}
+let toastTimer;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3000); }
+function copyText(text, fallbackEl) {
+  const fb = () => { if (fallbackEl) { const r = document.createRange(); r.selectNodeContents(fallbackEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Selected. Copy it from there.'); };
+  try { navigator.clipboard.writeText(text).then(() => toast('Copied.'), fb); } catch (e) { fb(); }
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('button'); if (!el) return;
+  const d = el.dataset;
+  if (d.go) return go(d.go);
+  if (d.toast) return toast(d.toast);
+  if (d.copy) return copyText(d.copy);
+  if (d.lab) { if (d.lab === 'unsure') { toast("Skipped. Hush won't learn from this cry."); return go('night'); } S.label = d.lab === 'other2' ? 'other' : d.lab; return render(false); }
+  if (d.took) { S.took = d.took; return render(false); }
+  if (d.tech) { S.tech = d.tech; return render(false); }
+  if (d.feel) { S.feel = d.feel; if (d.feel === 'Calmer') toast(`Noted. Hush will offer ${TECHS[S.tech].name.toLowerCase()} first next time.`); return render(false); }
+  if (d.tick) { const i = Number(d.tick); S.settleTicks.has(i) ? S.settleTicks.delete(i) : S.settleTicks.add(i); return render(false); }
+  if (d.mood) { S.mood = Number(d.mood); return render(false); }
+  if (d.sleep) { S.sleepH = Math.max(0, Math.min(14, S.sleepH + Number(d.sleep))); return render(false); }
+  if (d.src) return connectSource(d.src);
+  if (d.rtype) { S.rep.type = d.rtype; return render(false); }
+  if (d.rdays) { S.rep.days = Number(d.rdays); return render(false); }
+  if (d.ropt) { S.rep.inc[d.ropt] = !S.rep.inc[d.ropt]; return render(false); }
+  if (d.srcoff) { S.src[d.srcoff] = 'off'; return render(false); }
+  if (d.mon) { if (MON_TYPES[d.mon].soon) return toast('Nanit, Owlet and Miku need a partnership with each company before Hush can use their audio.'); S.monType = d.mon; return render(false); }
+  switch (d.action) {
+    case 'scan': S.scanning = true; return render(false);
+    case 'connect': S.paired = true; return render(true);
+    case 'simcry': toast('Cry detected at 02:14. Working out a guess…'); setTimeout(() => go('cry'), 700); return;
+    case 'savelabel': S.cries += 1; return render(true);
+    case 'devtoggle': return S.devRunning ? devStop() : devStart();
+    case 'devcry': dev.cryFrom = dev.t + 0.2; dev.cryUntil = dev.t + 6 + Math.random() * 4; devLog('m', 'PLAY', 'simulated cry, 6–10 s'); return;
+    case 'devmark': devLog('m', 'MARK', 'parent: baby is crying'); return;
+    case 'calmstart': return calmStart();
+    case 'calmstop': stopWellTimers(); S.calm = { running: false, t: 0, done: false }; return render(false);
+    case 'awaystart': S.away = 300; render(true); awayTimer = setInterval(awayTick, 1000); return;
+    case 'awayend': stopWellTimers(); S.away = null; toast('Welcome back. Isla has been safe the whole time.'); return go('cry');
+    case 'checkin': if (CRISIS_WORDS.test(S.note)) return go('crisis'); S.checked = true; return render(true);
+    case 'crisisdemo': S.note = "I can't cope anymore. I keep thinking everyone would be better off without me."; if (S.mood === null) S.mood = 0; return go('crisis');
+    case 'crisisback': S.note = ''; return go('night');
+    case 'copymsg': return copyText(S.tagMsg, $('#tt-msg'));
+    case 'srcdone': S.paired = true; return render(true);
+    case 'openreport': S.rep.type = d.rt; S.rep.back = S.screen; S.rep.sending = false; if (d.rt === 'parent') S.rep.days = 14; return go('reports');
+    case 'repdownload': return downloadReport();
+    case 'repsendsheet': S.rep.sending = true; S.rep.to = S.rep.type === 'hv' ? 'Isla\u2019s health visitor team' : 'Our GP practice'; return render(true);
+    case 'repback': S.rep.sending = false; return render(true);
+    case 'repsend': S.rep.sending = false; render(true); return toast(`Secure link sent to ${S.rep.email.trim()} (prototype: nothing was actually sent).`);
+    case 'srcedit': S.paired = false; return render(true);
+  }
+});
+$('#step-select').addEventListener('change', (e) => go(e.target.value));
+document.addEventListener('input', (e) => {
+  const id = e.target.id;
+  if (id === 'ci-win') S.win = e.target.value;
+  if (id === 'ci-note') S.note = e.target.value;
+  if (id === 'tt-msg') S.tagMsg = e.target.value;
+  if (id === 'rep-q') S.rep.q[S.rep.type] = e.target.value;
+  if (id === 'rep-to') S.rep.to = e.target.value;
+  if (id === 'rep-email') { S.rep.email = e.target.value; const b = document.querySelector('[data-action="repsend"]'); if (b) b.disabled = !S.rep.email.trim(); }
+  if (id === 'mon-url') { S.monUrl = e.target.value; const b = document.querySelector('[data-src="monitor"]'); if (b) b.disabled = !S.monUrl.trim(); }
+});
+
+/* ---------- Code panel ---------- */
+const FILES = ['CryDetector.swift', 'HushAudioTap.swift', 'CryStreamTestViewController.swift', 'setup.sh', 'offline_yamnet.py'];
+let currentFile = FILES[0];
+function highlight(src, file) {
+  let h = esc(src);
+  const tokens = [];
+  const keep = (cls) => (m) => { tokens.push(`<span class="${cls}">${m}</span>`); return `\u0000${tokens.length - 1}\u0000`; };
+  const isPy = file.endsWith('.py'), isSh = file.endsWith('.sh');
+  h = h.replace(isPy || isSh ? /#[^\n]*/g : /\/\/[^\n]*/g, keep('com'));
+  if (isPy) h = h.replace(/"""[\s\S]*?"""/g, keep('com'));
+  h = h.replace(/&quot;(?:[^&\n]|&(?!quot;))*?&quot;/g, keep('str'));
+  const kws = isPy ? 'import|from|def|return|for|in|if|elif|else|with|as|try|except|raise|while|and|or|not|lambda|None|True|False' : isSh ? 'if|then|fi|echo|cd|mkdir|cp|curl|grep|perl|cat|set|command|exit' : 'import|final|class|struct|enum|func|let|var|private|static|init|return|guard|else|if|for|in|throw|throws|try|self|Self|case|switch|weak|true|false|nil|override|required|super|extension|protocol|async|defer|while';
+  h = h.replace(new RegExp(`\\b(${kws})\\b`, 'g'), '<span class="kw">$1</span>');
+  h = h.replace(/\b([A-Z][A-Za-z0-9]+)\b/g, '<span class="ty">$1</span>');
+  h = h.replace(/\b(\d[\d_.]*)\b/g, '<span class="nm">$1</span>');
+  return h.replace(/\u0000(\d+)\u0000/g, (_, i) => tokens[i]);
+}
+function showFile(f) {
+  currentFile = f;
+  const src = document.getElementById('src-' + f).textContent.replace(/^\n/, '');
+  $('#code-view').innerHTML = highlight(src, f);
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.file === f));
+}
+$('#tabs').innerHTML = FILES.map((f) => `<button class="tab" role="tab" data-file="${f}" aria-selected="false">${f}</button>`).join('');
+$('#tabs').addEventListener('click', (e) => { const t = e.target.closest('.tab'); if (t) showFile(t.dataset.file); });
+$('#copy-code').addEventListener('click', () => copyText(document.getElementById('src-' + currentFile).textContent.replace(/^\n/, ''), $('#code-view')));
+
+Object.defineProperty(window, 'dev', { get: () => dev });
+buildNav();
+showFile(FILES[0]);
+render(false);
+</script>
+
+</html>
